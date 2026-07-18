@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ---- Persistence (SQL Server / local SQL Express; connection string overridable) ----
 var conn = builder.Configuration.GetConnectionString("Vss")
     ?? "Server=.\\SQLEXPRESS;Database=Vss;Trusted_Connection=True;TrustServerCertificate=True";
-builder.Services.AddDbContext<VssDbContext>(o => o.UseSqlServer(conn));
+builder.Services.AddDbContext<VssDbContext>(o => o.UseSqlServer(conn, sql => sql.EnableRetryOnFailure()));
 
 // ---- ERP boundary (Stub | SapByDesign | BusinessCentral, per Erp:Provider) ----
 builder.Services.AddErpClient(builder.Configuration);

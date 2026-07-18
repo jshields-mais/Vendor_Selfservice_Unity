@@ -1,4 +1,35 @@
-# Deployment scaffolding (UCP / Kubernetes)
+# Deployment
+
+## Quickest way to share it for testing — Docker Compose
+
+`docker-compose.yml` (repo root) runs the whole app — **SQL Server + API + frontend** —
+behind one URL. Anywhere with Docker works: your PC, or a small cloud VM you share.
+
+```bash
+docker compose up -d --build     # first run builds the images (a few minutes)
+# open http://localhost:8080
+docker compose logs -f backend   # watch startup / migrations
+docker compose down              # stop (keeps the database volume)
+docker compose down -v           # stop and wipe the database
+```
+
+To share with others, run it on a cloud VM (any provider) with port **8080** open and give
+testers `http://<vm-public-ip>:8080`. Change the DB password with `SA_PASSWORD=... docker
+compose up -d --build`, or the public port with `PORT=80`.
+
+**Two things to know before inviting testers:**
+
+- **ERP is the safe in-memory stub by default** (`Erp__Provider=Stub`) — testers can run the
+  full flow (link, edit, upload, review, approve) with **zero risk to the live SAP sandbox**.
+  To point at live SAP instead, set `ERP_PROVIDER=SapByDesign` plus `SAP_BASE_URL`,
+  `SAP_USERNAME`, and `SAP_PASSWORD` (env vars — never commit them), e.g. in a local `.env`.
+- **There is no real login.** Auth runs in dev mode and the UI has a "view as City staff"
+  toggle, so anyone can act as admin. Fine for a **trusted** group; don't expose it on the
+  public internet as-is. Real logins come with the Entra path below.
+
+---
+
+## Production scaffolding (UCP / Kubernetes)
 
 > **Scaffolding, not production-ready.** Everything here is a **template** with
 > placeholders. Review and fill in the UCP-specific values before deploying.

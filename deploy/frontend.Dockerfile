@@ -19,6 +19,15 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+# Vite inlines REACT_APP_* at build time (envPrefix includes REACT_APP_). Real shell env
+# takes precedence over the committed .env, so these build args set the deployed values.
+# Leave REACT_APP_VSS_API_DOMAIN empty to call the API on the same origin (via the nginx
+# /api proxy) — the simplest single-URL setup.
+ARG REACT_APP_VSS_API_DOMAIN=""
+ARG REACT_APP_AUTH_MODE="dev"
+ENV REACT_APP_VSS_API_DOMAIN=$REACT_APP_VSS_API_DOMAIN
+ENV REACT_APP_AUTH_MODE=$REACT_APP_AUTH_MODE
 RUN npm run build
 
 # ---- runtime stage ----

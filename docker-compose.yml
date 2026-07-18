@@ -1,0 +1,74 @@
+# Self-contained test stack: SQL Server + API + frontend, reachable at one URL.
+#
+#   docker compose up -d --build      # start (first run builds images)
+#   open http://localhost:8080         # the app
+#   docker compose down                # stop (keeps the DB volume)
+#   docker compose down -v             # stop and wipe the database
+#
+# Defaults to the SAFE in-memory ERP stub (Erp__Provider=Stub) so testers can exercise the
+# whole flow with zero risk to the live SAP sandbox. To point at live SAP instead, set
+# Erp__Provider=SapByDesign and supply Erp__SapByDesign__Password (see comments below).
+#
+# Auth is dev-mode: there is no real login — anyone can use the "view as City staff" toggle
+# to act as admin. Fine for a trusted test group; do not expose this publicly as-is.
+
+name: vss
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-VssTest_Passw0rd!}"
+      MSSQL_PID: "Developer"
+    volumes:
+      - vss-mssql:/var/opt/mssql
+    healthcheck:
+      # sqlcmd lives under mssql-tools18 on newer images and mssql-tools on older — try both.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  backend:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Vss: "Server=db,1433;Database=Vss;User Id=sa;Password=${SA_PASSWORD:-VssTest_Passw0rd!};TrustServerCertificate=True;Encrypt=False"
+      Auth__Mode: "Dev"
+      Frontend__Origin: "http://localhost:8080"
+      # ---- ERP: safe default is the in-memory stub ----
+      Erp__Provider: "${ERP_PROVIDER:-Stub}"
+      # ---- To use live SAP instead, set ERP_PROVIDER=SapByDesign and provide these: ----
+      Erp__SapByDesign__BaseUrl: "${SAP_BASE_URL:-}"
+      Erp__SapByDesign__Username: "${SAP_USERNAME:-}"
+      Erp__SapByDesign__Password: "${SAP_PASSWORD:-}"
+      Erp__SapByDesign__QuerySupplierPath: "${SAP_QUERY_PATH:-/sap/bc/srt/scs/sap/querysupplierin1}"
+      Erp__SapByDesign__ManageSupplierPath: "${SAP_MANAGE_PATH:-/sap/bc/srt/scs/sap/managesupplierin1}"
+      Erp__SapByDesign__SampleSupplierId: "${SAP_SAMPLE_ID:-62440}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: deploy/frontend.Dockerfile
+      args:
+        REACT_APP_AUTH_MODE: "dev"
+        REACT_APP_VSS_API_DOMAIN: ""   # empty → same-origin calls proxied to backend via nginx
+    ports:
+      - "${PORT:-8080}:80"
+    volumes:
+      - ./deploy/nginx.compose.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+
+volumes:
+  vss-mssql:
