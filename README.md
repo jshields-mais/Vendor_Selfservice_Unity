@@ -134,11 +134,18 @@ Then **verify connectivity** from the admin **ERP integration** screen → *Test
   and the WSDLs in `Erp/SapByDesign/wsdl/`: request **body** elements are in
   `http://sap.com/xi/SAPGlobal20/Global`, while the **SOAPAction** uses the `A1S/Global`
   service namespace; `SelectionByInternalID` filters via `LowerBoundaryIdentifier`
-  (`IntervalBoundaryTypeCode` 1 = equal); Manage uses `MaintainBundle_V1`. **Read/match are
-  verified live; the write (`ManageSupplierIn`) is validated non-destructively via
-  `CheckMaintainBundle_V1`.** The write field mapping in `Sap.cs` currently covers name +
-  address; extend it (banking/tax/contacts) as needed. Matching is by supplier number
-  (InternalID) — Tax ID + ZIP isn't a QuerySupplierIn selection.
+  (`IntervalBoundaryTypeCode` 1 = equal); Manage uses `MaintainBundle_V1`. Matching is by
+  supplier number (InternalID).
+- **SAP write coverage (verified live, change → approve → SAP):**
+  - ✅ **Name** (`FirstLineName`, direct on the supplier bundle).
+  - ✅ **Address + primary email/phone** — via `AddressInformation`, which needs LCTI
+    (`addressInformationListCompleteTransmissionIndicator`) + the existing address UUID, so
+    the connector reads the supplier first to update the address in place.
+  - ⏳ **Banking** (`BankDetails`) — needs a bank in the ByDesign **bank directory**
+    (`BankRoutingID`/`BankInternalID`) plus its own UUID/LCTI; not yet mapped.
+  - ⏳ **Contacts** (names) — separate `ContactPerson` business-partner entities; not yet mapped.
+  - ⚠️ **Tax (TIN)** — `ManageSupplierIn` exposes no direct TIN field (only
+    `DeviantTaxClassification`); likely not updatable via this service.
 - **Dev credential convenience**: `Erp:SapByDesign:CredentialsFile` — point it at a text file
   whose last non-empty line is the technical-user password; the app reads it at startup
   (like a mounted secret). Prefer user-secrets / env / a K8s Secret for real deployments.
