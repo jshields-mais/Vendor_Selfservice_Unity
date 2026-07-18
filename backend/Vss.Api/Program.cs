@@ -8,9 +8,10 @@ using Vss.Infrastructure.Erp;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---- Persistence (SQLite for dev; connection string overridable) ----
-var conn = builder.Configuration.GetConnectionString("Vss") ?? "Data Source=vss.db";
-builder.Services.AddDbContext<VssDbContext>(o => o.UseSqlite(conn));
+// ---- Persistence (SQL Server / local SQL Express; connection string overridable) ----
+var conn = builder.Configuration.GetConnectionString("Vss")
+    ?? "Server=.\\SQLEXPRESS;Database=Vss;Trusted_Connection=True;TrustServerCertificate=True";
+builder.Services.AddDbContext<VssDbContext>(o => o.UseSqlServer(conn));
 
 // ---- ERP boundary (stub now; swap UnityErpClient later) ----
 builder.Services.AddSingleton<IErpClient, StubErpClient>();

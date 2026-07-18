@@ -8,7 +8,12 @@ public static class DbInitializer
 {
     public static async Task InitializeAsync(VssDbContext db, CancellationToken ct = default)
     {
-        await db.Database.EnsureCreatedAsync(ct);
+        // SQL Server (real/dev DB): apply migrations. Other providers used in tests
+        // (SQLite in-memory) have no migrations — create the schema from the model.
+        if (db.Database.ProviderName == "Microsoft.EntityFrameworkCore.SqlServer")
+            await db.Database.MigrateAsync(ct);
+        else
+            await db.Database.EnsureCreatedAsync(ct);
 
         if (!await db.Vendors.AnyAsync(ct))
             db.Vendors.AddRange(SeedData.Vendors());
