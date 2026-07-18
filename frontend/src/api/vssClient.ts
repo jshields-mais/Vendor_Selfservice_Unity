@@ -1,6 +1,7 @@
 import {
   useApiQuery,
   apiMutate,
+  apiGetBlob,
 } from "@univerus/udp-react-enterprise-component-library";
 
 /**
@@ -52,6 +53,7 @@ export interface LinkMatchResult {
 export interface ChangeDiff { field: string; fromValue?: string | null; toValue?: string | null; }
 export interface ChangeRequest {
   id: string; code: string; vendorName: string; section: string; submittedByName: string; submittedAt: string; status: string; diffs: ChangeDiff[];
+  documentId?: string | null; documentName?: string | null;
 }
 
 export interface LinkRequestCreate {
@@ -59,7 +61,7 @@ export interface LinkRequestCreate {
   vendorNumber?: string; pin?: string; taxId?: string; zip?: string;
 }
 export interface ChangeRequestCreate { section: string; diffs: ChangeDiff[]; }
-export interface DocumentUpload { name: string; fileRef: string; }
+export interface DocumentUpload { name: string; fileName: string; contentType: string; contentBase64: string; }
 
 // ------------------------------------------------------------------ Query keys
 export const qk = {
@@ -89,4 +91,6 @@ export const changeRequests = {
 
 export const documents = {
   upload: (body: DocumentUpload) => apiMutate<VendorDoc>(VSS_BASE, "api/v1/documents", { body }),
+  /** Authorized fetch of a stored document's bytes (for PDF preview). */
+  content: (id: string) => apiGetBlob(VSS_BASE, `api/v1/documents/${id}/content`),
 };

@@ -40,11 +40,13 @@ public record LinkMatchResultDto(Guid? LinkRequestId, bool Matched, string? Vend
 // ---- Change requests ----
 public record ChangeDiffDto(string Field, string? FromValue, string? ToValue);
 public record ChangeRequestCreateDto(string Section, ChangeDiffDto[] Diffs);
-public record ChangeRequestDto(Guid Id, string Code, string VendorName, string Section, string SubmittedByName, DateTimeOffset SubmittedAt, string Status, ChangeDiffDto[] Diffs);
+public record ChangeRequestDto(Guid Id, string Code, string VendorName, string Section, string SubmittedByName, DateTimeOffset SubmittedAt, string Status, ChangeDiffDto[] Diffs, Guid? DocumentId = null, string? DocumentName = null);
 public record ReviewDecisionDto(string? Note);
 
 // ---- Documents ----
-public record DocumentUploadDto(string Name, string FileRef);
+/// <summary>A document uploaded from the portal: the compliance slot <paramref name="Name"/>,
+/// the original file name, its MIME type, and the file bytes as base64.</summary>
+public record DocumentUploadDto(string Name, string FileName, string ContentType, string ContentBase64);
 
 // ---- Admin ----
 public record AdminLinkRequestDto(Guid Id, string Company, string Email, string Method, string? MatchedVendorNumber, DateTimeOffset CreatedAt, string Status);

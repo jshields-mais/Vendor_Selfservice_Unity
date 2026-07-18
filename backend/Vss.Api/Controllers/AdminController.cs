@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Vss.Api.Contracts;
 using Vss.Domain;
 using Vss.Infrastructure;
+using Vss.Infrastructure.Documents;
 using Vss.Infrastructure.Erp;
 
 namespace Vss.Api.Controllers;
@@ -15,7 +16,7 @@ namespace Vss.Api.Controllers;
 [ApiController]
 [Route("api/v1/admin")]
 [Authorize(Policy = "Admin")]
-public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOptions> erpOptions) : ControllerBase
+public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOptions> erpOptions, IDocumentStore store) : ControllerBase
 {
     /// <summary>Pings the configured ERP (GetVendor on a sample id) and reports status.</summary>
     [HttpPost("erp/test")]
@@ -53,7 +54,7 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
             .OrderByDescending(c => c.SubmittedAt).ToListAsync(ct);
         return rows.Select(c => new ChangeRequestDto(
             c.Id, c.Code, c.Vendor?.LegalName ?? "", c.Section, c.SubmittedByName, c.SubmittedAt, c.Status.ToString(),
-            c.Diffs.Select(d => new ChangeDiffDto(d.Field, d.FromValue, d.ToValue)).ToArray())).ToList();
+            c.Diffs.Select(d => new ChangeDiffDto(d.Field, d.FromValue, d.ToValue)).ToArray(), c.DocumentId)).ToList();
     }
 
     /// <summary>Approve a change request: apply the diff to the local record and push
@@ -67,17 +68,35 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
         if (cr.Vendor is null) return BadRequest("Change request has no vendor.");
 
         var approvedAt = DateTimeOffset.UtcNow;
-        var patch = new VendorMasterPatch { EffectiveDate = approvedAt };
-        foreach (var d in cr.Diffs)
-        {
-            var prop = typeof(Vendor).GetProperty(d.Field);
-            if (prop is not null && prop.PropertyType == typeof(string))
-                prop.SetValue(cr.Vendor, d.ToValue);
-            patch.Fields[d.Field] = d.ToValue;
-        }
 
-        await erp.UpdateVendorMasterAsync(cr.Vendor.Number, patch, ct);
-        cr.Vendor.LastSyncedAt = approvedAt;
+        if (cr.Section == "Documents" && cr.DocumentId is not null)
+        {
+            // Document submission: attach the uploaded file to the ERP supplier master.
+            var doc = await db.Documents.FirstOrDefaultAsync(d => d.Id == cr.DocumentId, ct);
+            if (doc?.StorageRef is not null)
+            {
+                var file = await store.GetAsync(doc.StorageRef, ct);
+                if (file is not null)
+                    await erp.AddSupplierAttachmentAsync(cr.Vendor.Number,
+                        new ErpAttachment { FileName = file.FileName, MimeType = file.ContentType, Content = file.Content }, ct);
+                doc.Status = DocumentStatus.Current;
+            }
+            cr.Vendor.LastSyncedAt = approvedAt;
+        }
+        else
+        {
+            var patch = new VendorMasterPatch { EffectiveDate = approvedAt };
+            foreach (var d in cr.Diffs)
+            {
+                var prop = typeof(Vendor).GetProperty(d.Field);
+                if (prop is not null && prop.PropertyType == typeof(string))
+                    prop.SetValue(cr.Vendor, d.ToValue);
+                patch.Fields[d.Field] = d.ToValue;
+            }
+
+            await erp.UpdateVendorMasterAsync(cr.Vendor.Number, patch, ct);
+            cr.Vendor.LastSyncedAt = approvedAt;
+        }
 
         cr.Status = ChangeRequestStatus.Approved;
         cr.DecidedAt = approvedAt;
@@ -105,9 +124,11 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
         var c = await db.ChangeRequests.Include(x => x.Diffs).Include(x => x.Vendor)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c is null) return NotFound();
+        var docName = c.DocumentId is null ? null
+            : (await db.Documents.FirstOrDefaultAsync(d => d.Id == c.DocumentId, ct))?.FileRef;
         return new ChangeRequestDto(c.Id, c.Code, c.Vendor?.LegalName ?? "", c.Section, c.SubmittedByName,
             c.SubmittedAt, c.Status.ToString(),
-            c.Diffs.Select(d => new ChangeDiffDto(d.Field, d.FromValue, d.ToValue)).ToArray());
+            c.Diffs.Select(d => new ChangeDiffDto(d.Field, d.FromValue, d.ToValue)).ToArray(), c.DocumentId, docName);
     }
 
     [HttpGet("stats")]

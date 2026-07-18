@@ -212,12 +212,43 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
   );
 }
 
+function readAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      // strip the "data:<mime>;base64," prefix
+      const result = String(reader.result);
+      resolve(result.slice(result.indexOf(",") + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function DocumentsPanel({ vendor }: { vendor: Vendor }) {
   const qc = useQueryClient();
+  const [pending, setPending] = useState<string | null>(null);
   const upload = useMutation({
-    mutationFn: (name: string) => documents.upload({ name, fileRef: `${name.replace(/\W+/g, "_")}_2026.pdf` }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.vendor }),
+    mutationFn: async ({ name, file }: { name: string; file: File }) =>
+      documents.upload({ name, fileName: file.name, contentType: file.type || "application/pdf", contentBase64: await readAsBase64(file) }),
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: qk.me }),
+      qc.invalidateQueries({ queryKey: qk.vendor }),
+    ]),
+    onSettled: () => setPending(null),
   });
+
+  const pick = (name: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file) { setPending(name); upload.mutate({ name, file }); }
+    };
+    input.click();
+  };
+
   const cols = ["Document", "File", "Validity", "Status", ""];
   return (
     <div style={{ padding: "8px 0" }}>
@@ -233,7 +264,9 @@ function DocumentsPanel({ vendor }: { vendor: Vendor }) {
               <td style={{ padding: "14px 24px", fontSize: 14, color: "var(--fg-2)" }}>{d.validity}</td>
               <td style={{ padding: "14px 24px" }}><StatusPill status={d.status} /></td>
               <td style={{ padding: "14px 24px", textAlign: "right" }}>
-                <Button variant="outline" style={{ padding: "7px 14px", fontSize: 13 }} disabled={upload.isPending} onClick={() => upload.mutate(d.name)}>Upload</Button>
+                <Button variant="outline" style={{ padding: "7px 14px", fontSize: 13 }} disabled={upload.isPending} onClick={() => pick(d.name)}>
+                  {pending === d.name ? "Uploading…" : "Upload PDF"}
+                </Button>
               </td>
             </tr>
           ))}

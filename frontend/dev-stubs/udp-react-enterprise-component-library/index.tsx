@@ -90,6 +90,14 @@ async function request<T>(baseURL: string, url: string, method: string, body?: u
 export function apiGet<T>(baseURL: string, url: string): Promise<T> {
   return request<T>(baseURL, url, "GET");
 }
+
+/** Authorized GET that returns the raw response as a Blob (e.g. a PDF for preview). */
+export async function apiGetBlob(baseURL: string, url: string): Promise<Blob> {
+  const headers: Record<string, string> = { ...(await _authHeaders()) };
+  const res = await fetch(join(baseURL, url), { method: "GET", headers, credentials: "include" });
+  if (!res.ok) throw new Error(`GET ${url} → ${res.status} ${res.statusText}`);
+  return res.blob();
+}
 export function apiMutate<T>(baseURL: string, url: string, opts?: { method?: string; body?: unknown }): Promise<T> {
   return request<T>(baseURL, url, opts?.method ?? "POST", opts?.body);
 }

@@ -13,6 +13,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
     public DbSet<LinkRequest> LinkRequests => Set<LinkRequest>();
     public DbSet<ChangeRequest> ChangeRequests => Set<ChangeRequest>();
     public DbSet<ChangeDiff> ChangeDiffs => Set<ChangeDiff>();
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

@@ -36,5 +36,6 @@ public enum DocumentStatus
     Current = 0,
     Expiring = 1,
     Expired = 2,
-    AwaitingDocs = 3
+    AwaitingDocs = 3,
+    PendingReview = 4
 }

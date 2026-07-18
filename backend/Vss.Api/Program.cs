@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Vss.Api.Auth;
 using Vss.Infrastructure;
+using Vss.Infrastructure.Documents;
 using Vss.Infrastructure.Erp;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,8 @@ builder.Services.AddErpClient(builder.Configuration);
 // ---- Current-user resolution ----
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentUser>();
+// Document storage seam: DB-backed for local/dev; swap for a UDP-drive implementation here.
+builder.Services.AddScoped<IDocumentStore, DbDocumentStore>();
 
 // ---- Auth: Dev handler locally, Microsoft Entra (JWT bearer) on the network ----
 var authMode = builder.Configuration["Auth:Mode"] ?? "Dev";

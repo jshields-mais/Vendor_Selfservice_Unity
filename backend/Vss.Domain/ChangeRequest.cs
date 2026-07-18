@@ -18,6 +18,10 @@ public class ChangeRequest
     /// <summary>Profile section this change targets, e.g. "Banking &amp; remittance".</summary>
     public string Section { get; set; } = string.Empty;
 
+    /// <summary>For a document submission (Section = "Documents"), the uploaded document
+    /// under review. On approval its file is attached to the ERP supplier master.</summary>
+    public Guid? DocumentId { get; set; }
+
     public Guid SubmittedByUserId { get; set; }
     public string SubmittedByName { get; set; } = string.Empty;
     public DateTimeOffset SubmittedAt { get; set; } = DateTimeOffset.UtcNow;
