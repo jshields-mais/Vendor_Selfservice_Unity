@@ -14,7 +14,7 @@ public static class VendorMapping
         v.Website,
         v.Status,
         new AddressDto(v.RemitStreet, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry, v.PhysicalAddress),
-        new BankingDto(v.PaymentMethod, v.BankName, MaskMiddle(v.RoutingNumber, 3, 1), MaskTail(v.AccountNumber, 4), v.AccountType, v.RemittanceEmail),
+        new BankingDto(v.PaymentMethod, v.BankName, MaskMiddle(v.RoutingNumber, 3, 1), MaskTail(v.AccountNumber, 4), v.AccountType),
         new TaxDto(v.LegalTaxName, v.TaxIdType, MaskTin(v.Tin), v.TaxClassification, v.ExemptPayee, v.W9OnFile),
         new ContactsDto(v.PrimaryContact, v.PrimaryTitle, v.PrimaryEmail, v.PrimaryPhone, v.ApContactName, v.ApEmail, v.SalesContactName, v.SalesEmail),
         v.CategoryCodes.Select(c => c.Code).ToArray(),

@@ -53,7 +53,6 @@ public static class PortalQueries
         RoutingNumber = d.RoutingNumber,
         AccountNumber = d.AccountNumber,
         AccountType = d.AccountType,
-        RemittanceEmail = d.RemittanceEmail,
         TaxIdType = d.TaxIdType,
         Tin = d.Tin,
         TaxClassification = d.TaxClassification,

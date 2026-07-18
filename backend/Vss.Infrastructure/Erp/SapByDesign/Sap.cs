@@ -85,9 +85,9 @@ internal static class Sap
             var bank = new XElement("BankDetails",
                 new XAttribute("actionCode", "04"),
                 new XElement("ID", ctx.BankDetailsId),
-                new XElement("BankRoutingID", routing));
-            if (!string.IsNullOrEmpty(ctx.BankRoutingIdTypeCode))
-                bank.Add(new XElement("BankRoutingIDTypeCode", ctx.BankRoutingIdTypeCode));
+                new XElement("BankRoutingID", routing),
+                // US ABA routing standard (default when the source record has no type).
+                new XElement("BankRoutingIDTypeCode", string.IsNullOrEmpty(ctx.BankRoutingIdTypeCode) ? "ABA" : ctx.BankRoutingIdTypeCode));
             if (!string.IsNullOrEmpty(account))
                 bank.Add(new XElement("BankAccountID", account));
             supplier.Add(bank);

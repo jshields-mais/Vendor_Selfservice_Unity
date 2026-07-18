@@ -14,7 +14,7 @@ public record MeDto(
 
 // ---- Vendor record (sectioned; secrets masked) ----
 public record AddressDto(string RemitStreet, string RemitCity, string RemitState, string RemitZip, string RemitCountry, string? PhysicalAddress);
-public record BankingDto(string PaymentMethod, string? BankName, string? RoutingNumberMasked, string? AccountNumberMasked, string AccountType, string? RemittanceEmail);
+public record BankingDto(string PaymentMethod, string? BankName, string? RoutingNumberMasked, string? AccountNumberMasked, string AccountType);
 public record TaxDto(string? LegalTaxName, string TaxIdType, string? TinMasked, string? TaxClassification, string ExemptPayee, string? W9OnFile);
 public record ContactsDto(string? PrimaryContact, string? PrimaryTitle, string? PrimaryEmail, string? PrimaryPhone, string? ApContactName, string? ApEmail, string? SalesContactName, string? SalesEmail);
 public record DocumentDto(Guid Id, string Name, string? FileRef, string Validity, string Status);

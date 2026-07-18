@@ -24,7 +24,7 @@ export interface Address {
   remitStreet: string; remitCity: string; remitState: string; remitZip: string; remitCountry: string; physicalAddress?: string | null;
 }
 export interface Banking {
-  paymentMethod: string; bankName?: string | null; routingNumberMasked?: string | null; accountNumberMasked?: string | null; accountType: string; remittanceEmail?: string | null;
+  paymentMethod: string; bankName?: string | null; routingNumberMasked?: string | null; accountNumberMasked?: string | null; accountType: string;
 }
 export interface Tax {
   legalTaxName?: string | null; taxIdType: string; tinMasked?: string | null; taxClassification?: string | null; exemptPayee: string; w9OnFile?: string | null;

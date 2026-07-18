@@ -56,7 +56,6 @@ public static class SeedData
             RoutingNumber = "092900321",
             AccountNumber = "1004732",
             AccountType = "Checking",
-            RemittanceEmail = "ap@northstarsupply.com",
             LegalTaxName = "Northstar Supply Co.",
             TaxIdType = "EIN",
             Tin = "81-3920423",

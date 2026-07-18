@@ -65,10 +65,9 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
     case "banking": return [
       sel("PaymentMethod", "Payment method", v.banking.paymentMethod, ["ACH / EFT", "Check", "Wire"]),
       t("BankName", "Bank name", v.banking.bankName),
-      t("RoutingNumber", "Routing number", v.banking.routingNumberMasked),
+      t("RoutingNumber", "ABA Routing Number", v.banking.routingNumberMasked),
       t("AccountNumber", "Account number", v.banking.accountNumberMasked),
       sel("AccountType", "Account type", v.banking.accountType, ["Checking", "Savings"]),
-      t("RemittanceEmail", "Remittance email", v.banking.remittanceEmail),
     ];
     case "tax": return [
       t("LegalTaxName", "Legal tax name", v.tax.legalTaxName, true),

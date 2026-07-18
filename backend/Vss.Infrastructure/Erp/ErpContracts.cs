@@ -24,7 +24,6 @@ public class ErpVendorDto
     public string? RoutingNumber { get; set; }
     public string? AccountNumber { get; set; }
     public string AccountType { get; set; } = "Checking";
-    public string? RemittanceEmail { get; set; }
 
     public string TaxIdType { get; set; } = "EIN";
     public string? Tin { get; set; }

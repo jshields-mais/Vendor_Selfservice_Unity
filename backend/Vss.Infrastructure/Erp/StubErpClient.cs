@@ -81,7 +81,6 @@ public class StubErpClient : IErpClient
         RoutingNumber = v.RoutingNumber,
         AccountNumber = v.AccountNumber,
         AccountType = v.AccountType,
-        RemittanceEmail = v.RemittanceEmail,
         TaxIdType = v.TaxIdType,
         Tin = v.Tin,
         TaxClassification = v.TaxClassification,

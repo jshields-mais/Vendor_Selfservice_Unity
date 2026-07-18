@@ -36,7 +36,6 @@ public class Vendor
     public string? RoutingNumber { get; set; }
     public string? AccountNumber { get; set; }
     public string AccountType { get; set; } = "Checking";
-    public string? RemittanceEmail { get; set; }
 
     // ---- Tax / W-9 (edits always require review) ----
     public string? LegalTaxName { get; set; }

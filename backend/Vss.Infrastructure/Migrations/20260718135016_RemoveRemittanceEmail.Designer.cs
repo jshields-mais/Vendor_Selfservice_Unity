@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vss.Infrastructure;
 
@@ -11,9 +12,11 @@ using Vss.Infrastructure;
 namespace Vss.Infrastructure.Migrations
 {
     [DbContext(typeof(VssDbContext))]
-    partial class VssDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718135016_RemoveRemittanceEmail")]
+    partial class RemoveRemittanceEmail
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
