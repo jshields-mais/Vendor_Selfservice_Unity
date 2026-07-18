@@ -36,8 +36,9 @@ internal static class Sap
     /// address UUID so the in-use address is updated in place, not deleted/recreated.
     /// Element order follows the WSDL schema sequence.
     /// </summary>
-    public static string BuildMaintainBundle(string internalId, IReadOnlyDictionary<string, string?> fields, string? addressUuid = null)
+    public static string BuildMaintainBundle(string internalId, IReadOnlyDictionary<string, string?> fields, SapMaintainContext? ctx = null)
     {
+        ctx ??= new SapMaintainContext();
         var supplier = new XElement("Supplier",
             new XAttribute("actionCode", "04"),
             new XElement("InternalID", internalId));
@@ -45,32 +46,51 @@ internal static class Sap
         if (fields.TryGetValue("LegalName", out var name) && name is not null)
             supplier.Add(new XElement("FirstLineName", name));
 
+        // ---- Address + email/phone (AddressInformation, LCTI + UUID) ----
         var address = new XElement("Address", new XAttribute("actionCode", "04"));
         var postal = new XElement("PostalAddress");
         void P(string field, string el)
         {
             if (fields.TryGetValue(field, out var v) && !string.IsNullOrEmpty(v)) postal.Add(new XElement(el, v));
         }
-        // schema order: CountryCode, StreetName, CityName, RegionCode, StreetPostalCode
-        P("RemitCountry", "CountryCode");
+        P("RemitCountry", "CountryCode"); // schema order: Country, Street, City, Region, PostalCode
         P("RemitStreet", "StreetName");
         P("RemitCity", "CityName");
         P("RemitState", "RegionCode");
         P("RemitZip", "StreetPostalCode");
         if (postal.HasElements) address.Add(postal);
-        // Address-level: PostalAddress, Phone, EMailURI (in that order)
         if (fields.TryGetValue("PrimaryPhone", out var phone) && !string.IsNullOrEmpty(phone))
             address.Add(new XElement("PhoneFormattedNumberDescription", phone));
         if (fields.TryGetValue("PrimaryEmail", out var email) && !string.IsNullOrEmpty(email))
             address.Add(new XElement("EMailURI", email));
 
-        if (address.HasElements && !string.IsNullOrEmpty(addressUuid))
+        if (address.HasElements && !string.IsNullOrEmpty(ctx.AddressUuid))
         {
             supplier.Add(new XAttribute("addressInformationListCompleteTransmissionIndicator", "true"));
             supplier.Add(new XElement("AddressInformation",
                 new XAttribute("actionCode", "04"),
-                new XElement("UUID", addressUuid),
+                new XElement("UUID", ctx.AddressUuid),
                 address));
+        }
+
+        // ---- Banking (BankDetails, LCTI + existing record ID; routing must resolve to a
+        //      bank in the ByDesign bank directory). schema order: ID, BankRoutingID,
+        //      BankRoutingIDTypeCode, BankAccountID. ----
+        var routing = fields.GetValueOrDefault("RoutingNumber") ?? ctx.BankRoutingId;
+        var account = fields.GetValueOrDefault("AccountNumber");
+        var banksTouched = fields.ContainsKey("RoutingNumber") || fields.ContainsKey("AccountNumber");
+        if (banksTouched && !string.IsNullOrEmpty(ctx.BankDetailsId) && !string.IsNullOrEmpty(routing))
+        {
+            supplier.Add(new XAttribute("bankDetailsListCompleteTransmissionIndicator", "true"));
+            var bank = new XElement("BankDetails",
+                new XAttribute("actionCode", "04"),
+                new XElement("ID", ctx.BankDetailsId),
+                new XElement("BankRoutingID", routing));
+            if (!string.IsNullOrEmpty(ctx.BankRoutingIdTypeCode))
+                bank.Add(new XElement("BankRoutingIDTypeCode", ctx.BankRoutingIdTypeCode));
+            if (!string.IsNullOrEmpty(account))
+                bank.Add(new XElement("BankAccountID", account));
+            supplier.Add(bank);
         }
 
         return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
@@ -91,4 +111,14 @@ internal static class Sap
                 new XElement(Soap + "Header"),
                 new XElement(Soap + "Body", body)))
             .ToString(SaveOptions.DisableFormatting);
+}
+
+/// <summary>Identifiers read from the supplier before a write so update-in-place nodes
+/// (address, bank details) can carry the existing record keys required by ByDesign.</summary>
+internal sealed class SapMaintainContext
+{
+    public string? AddressUuid { get; set; }
+    public string? BankDetailsId { get; set; }
+    public string? BankRoutingId { get; set; }
+    public string? BankRoutingIdTypeCode { get; set; }
 }

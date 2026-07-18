@@ -45,31 +45,47 @@ public class SapByDesignErpClient : IErpClient
 
     private static readonly string[] AddressFields =
         { "RemitCountry", "RemitStreet", "RemitCity", "RemitState", "RemitZip", "PrimaryEmail", "PrimaryPhone" };
+    private static readonly string[] BankingFields = { "RoutingNumber", "AccountNumber" };
 
     public async Task UpdateVendorMasterAsync(string vendorNumber, VendorMasterPatch patch, CancellationToken ct = default)
     {
         var fields = new Dictionary<string, string?>(patch.Fields);
-        string? addressUuid = null;
+        var ctx = new SapMaintainContext();
+        var needsAddress = AddressFields.Any(fields.ContainsKey);
+        var needsBanking = BankingFields.Any(fields.ContainsKey);
 
-        // Address/email/phone changes must update the existing address in place, which
-        // needs the AddressInformation UUID + the full current postal address (LCTI).
-        if (AddressFields.Any(fields.ContainsKey))
+        // Address + bank changes update existing records in place, which needs their keys
+        // (AddressInformation UUID / BankDetails ID + routing) — read the supplier first.
+        if (needsAddress || needsBanking)
         {
             var q = await PostAsync(_opt.QuerySupplierPath, Sap.QueryAction, Sap.BuildQueryByInternalId(vendorNumber), ct);
-            addressUuid = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "AddressInformation")
-                ?.Elements().FirstOrDefault(e => e.Name.LocalName == "UUID")?.Value;
 
-            var current = ParseSupplier(q);
-            void Fill(string key, string? value) { if (!fields.ContainsKey(key) && !string.IsNullOrEmpty(value)) fields[key] = value; }
-            Fill("RemitCountry", current?.RemitCountry);
-            Fill("RemitStreet", current?.RemitStreet);
-            Fill("RemitCity", current?.RemitCity);
-            Fill("RemitState", current?.RemitState);
-            Fill("RemitZip", current?.RemitZip);
+            if (needsAddress)
+            {
+                ctx.AddressUuid = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "AddressInformation")
+                    ?.Elements().FirstOrDefault(e => e.Name.LocalName == "UUID")?.Value;
+
+                var current = ParseSupplier(q);
+                void Fill(string key, string? value) { if (!fields.ContainsKey(key) && !string.IsNullOrEmpty(value)) fields[key] = value; }
+                Fill("RemitCountry", current?.RemitCountry);
+                Fill("RemitStreet", current?.RemitStreet);
+                Fill("RemitCity", current?.RemitCity);
+                Fill("RemitState", current?.RemitState);
+                Fill("RemitZip", current?.RemitZip);
+            }
+
+            if (needsBanking)
+            {
+                var bank = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "BankDetails");
+                string? B(string n) => bank?.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
+                ctx.BankDetailsId = B("ID");
+                ctx.BankRoutingId = B("BankRoutingID");
+                ctx.BankRoutingIdTypeCode = B("BankRoutingIDTypeCode");
+            }
         }
 
         var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
-            Sap.BuildMaintainBundle(vendorNumber, fields, addressUuid), ct);
+            Sap.BuildMaintainBundle(vendorNumber, fields, ctx), ct);
 
         // MaximumLogItemSeverityCode "3" = error.
         if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")

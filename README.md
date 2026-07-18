@@ -141,8 +141,9 @@ Then **verify connectivity** from the admin **ERP integration** screen → *Test
   - ✅ **Address + primary email/phone** — via `AddressInformation`, which needs LCTI
     (`addressInformationListCompleteTransmissionIndicator`) + the existing address UUID, so
     the connector reads the supplier first to update the address in place.
-  - ⏳ **Banking** (`BankDetails`) — needs a bank in the ByDesign **bank directory**
-    (`BankRoutingID`/`BankInternalID`) plus its own UUID/LCTI; not yet mapped.
+  - ✅ **Banking** (`BankDetails`) — account number + routing update in place (LCTI + the
+    existing record `ID`, read first). The routing must resolve to a bank in the ByDesign
+    **bank directory**; bank name (on the bank master) and account-type codes aren't mapped.
   - ⏳ **Contacts** (names) — separate `ContactPerson` business-partner entities; not yet mapped.
   - ⚠️ **Tax (TIN)** — `ManageSupplierIn` exposes no direct TIN field (only
     `DeviantTaxClassification`); likely not updatable via this service.
