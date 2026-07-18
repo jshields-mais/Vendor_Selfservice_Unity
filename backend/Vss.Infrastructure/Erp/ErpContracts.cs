@@ -58,6 +58,14 @@ public class VendorMasterPatch
     public DateTimeOffset? EffectiveDate { get; set; }
 }
 
+/// <summary>A file to attach to the ERP vendor master (supplier "Attachments" tab).</summary>
+public class ErpAttachment
+{
+    public string FileName { get; set; } = string.Empty;
+    public string MimeType { get; set; } = "application/pdf";
+    public byte[] Content { get; set; } = Array.Empty<byte>();
+}
+
 /// <summary>
 /// Boundary to the City's ERP vendor master. The portal never writes the ERP
 /// directly outside this interface; approvals call <see cref="UpdateVendorMasterAsync"/>.
@@ -68,4 +76,8 @@ public interface IErpClient
     Task<ErpVendorDto?> GetVendorAsync(string vendorNumber, CancellationToken ct = default);
     Task<ErpVendorDto?> MatchVendorAsync(MatchQuery query, CancellationToken ct = default);
     Task UpdateVendorMasterAsync(string vendorNumber, VendorMasterPatch patch, CancellationToken ct = default);
+
+    /// <summary>Adds a document to the supplier's attachments. Returns false if the
+    /// provider doesn't support attachments (the caller keeps the file in the portal).</summary>
+    Task<bool> AddSupplierAttachmentAsync(string vendorNumber, ErpAttachment attachment, CancellationToken ct = default);
 }

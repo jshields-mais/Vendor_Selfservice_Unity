@@ -217,6 +217,29 @@ public class SapByDesignErpClientTests
     }
 
     [Fact]
+    public async Task AddAttachment_builds_attachmentfolder_envelope_with_base64_pdf()
+    {
+        var (client, handler) = Make((_, _) => FakeHttpHandler.Xml(MaintainOk));
+        var bytes = Encoding.ASCII.GetBytes("%PDF-1.4 hello");
+
+        var ok = await client.AddSupplierAttachmentAsync("62440",
+            new ErpAttachment { FileName = "W9.pdf", MimeType = "application/pdf", Content = bytes });
+
+        Assert.True(ok);
+        var body = handler.Calls.Single().Body;
+        Assert.Contains("<InternalID>62440</InternalID>", body);
+        Assert.Contains("<AttachmentFolder", body);
+        Assert.Contains("DocumentListCompleteTransmissionIndicator=\"false\"", body);
+        Assert.Contains("ActionCode=\"01\"", body);                       // new document
+        Assert.Contains("<CategoryCode>2</CategoryCode>", body);          // file attachment
+        Assert.Contains("<TypeCode>10001</TypeCode>", body);
+        Assert.Contains("<Name>W9.pdf</Name>", body);
+        Assert.Contains("fileName=\"W9.pdf\"", body);
+        Assert.Contains("mimeCode=\"application/pdf\"", body);
+        Assert.Contains(Convert.ToBase64String(bytes), body);            // file content inline
+    }
+
+    [Fact]
     public async Task Update_throws_on_error_severity()
     {
         var err = """

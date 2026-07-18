@@ -61,6 +61,16 @@ public class BusinessCentralErpClient(
         logger.LogInformation("[BC] PATCH vendors({Id}) — {Fields}", id, string.Join(", ", patch.Fields.Keys));
     }
 
+    public Task<bool> AddSupplierAttachmentAsync(string vendorNumber, ErpAttachment att, CancellationToken ct = default)
+    {
+        // BC attachments live on the separate `attachments`/`documentAttachments` entity and
+        // aren't wired yet; report unsupported so the portal keeps the file rather than
+        // silently dropping it. [TODO: implement via BC attachments API when required.]
+        logger.LogWarning("[BC] attachment upload not implemented; keeping {File} in the portal for vendor {Number}",
+            att.FileName, vendorNumber);
+        return Task.FromResult(false);
+    }
+
     // ---------------------------------------------------------------- http
     private async Task<HttpRequestMessage> AuthRequestAsync(HttpMethod method, string url, CancellationToken ct)
     {

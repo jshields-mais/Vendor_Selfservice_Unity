@@ -61,6 +61,13 @@ public class StubErpClient : IErpClient
         return Task.CompletedTask;
     }
 
+    public Task<bool> AddSupplierAttachmentAsync(string vendorNumber, ErpAttachment att, CancellationToken ct = default)
+    {
+        _logger.LogInformation("[ERP stub] attachment {File} ({Bytes} bytes) added to vendor {Number}",
+            att.FileName, att.Content.Length, vendorNumber);
+        return Task.FromResult(true);
+    }
+
     private static string Norm(string? s) => (s ?? string.Empty).Trim().ToUpperInvariant();
 
     private static ErpVendorDto ToDto(Vendor v) => new()

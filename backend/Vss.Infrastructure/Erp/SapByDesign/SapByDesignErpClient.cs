@@ -89,6 +89,21 @@ public class SapByDesignErpClient : IErpClient
         _log.LogInformation("[SAP ByD] MaintainBundle supplier {Number} — {Fields}", vendorNumber, string.Join(", ", patch.Fields.Keys));
     }
 
+    public async Task<bool> AddSupplierAttachmentAsync(string vendorNumber, ErpAttachment att, CancellationToken ct = default)
+    {
+        var base64 = Convert.ToBase64String(att.Content);
+        var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
+            Sap.BuildAddAttachment(vendorNumber, att.FileName, att.MimeType, base64), ct);
+
+        if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")
+            throw new InvalidOperationException(
+                $"SAP ByDesign attachment for {vendorNumber} failed: {Local(doc.Root, "Note") ?? "unknown error"}");
+
+        _log.LogInformation("[SAP ByD] attachment {File} ({Bytes} bytes) added to supplier {Number}",
+            att.FileName, att.Content.Length, vendorNumber);
+        return true;
+    }
+
     /// <summary>
     /// Decides how to write bank details given the supplier's current bank record(s) and
     /// the approval date, implementing SAP's validity-dated bank data:

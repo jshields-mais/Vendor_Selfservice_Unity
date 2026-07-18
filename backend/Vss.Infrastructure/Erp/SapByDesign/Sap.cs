@@ -94,6 +94,42 @@ internal static class Sap
             supplier));
     }
 
+    /// <summary>
+    /// Builds a MaintainBundle that appends one document to the supplier's attachment
+    /// folder (the "Attachments" tab). The folder is sent as an incomplete list
+    /// (DocumentListCompleteTransmissionIndicator=false) so existing attachments are kept.
+    /// Note: AttachmentFolder/Document/FileContent use a capitalised <c>ActionCode</c>
+    /// attribute, unlike the lowercase <c>actionCode</c> on Supplier/Address/BankDetails.
+    /// </summary>
+    public static string BuildAddAttachment(string internalId, string fileName, string mimeCode, string base64Content)
+    {
+        var supplier = new XElement("Supplier",
+            new XAttribute("actionCode", "04"),
+            new XElement("InternalID", internalId),
+            new XElement("AttachmentFolder",
+                new XAttribute("ActionCode", "04"),
+                new XAttribute("DocumentListCompleteTransmissionIndicator", "false"),
+                new XElement("Document",
+                    new XAttribute("ActionCode", "01"),
+                    new XElement("VisibleIndicator", "true"),
+                    // CategoryCode 2 + TypeCode 10001 = a standard file attachment; values
+                    // confirmed by reading an existing attachment off a live supplier.
+                    new XElement("CategoryCode", "2"),
+                    new XElement("TypeCode", "10001"),
+                    new XElement("MIMECode", mimeCode),
+                    new XElement("Name", fileName),
+                    new XElement("FileContent",
+                        new XAttribute("ActionCode", "01"),
+                        new XElement("BinaryObject",
+                            new XAttribute("mimeCode", mimeCode),
+                            new XAttribute("fileName", fileName),
+                            base64Content)))));
+
+        return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
+            new XElement("BasicMessageHeader"),
+            supplier));
+    }
+
     /// <summary>SAP's high date for an unlimited "valid to" (9999-12-31).</summary>
     public static readonly DateOnly UnlimitedDate = new(9999, 12, 31);
 
