@@ -73,29 +73,49 @@ internal static class Sap
                 address));
         }
 
-        // ---- Banking (BankDetails, LCTI + existing record ID; routing must resolve to a
-        //      bank in the ByDesign bank directory). schema order: ID, BankRoutingID,
-        //      BankRoutingIDTypeCode, BankAccountID. ----
-        var routing = fields.GetValueOrDefault("RoutingNumber") ?? ctx.BankRoutingId;
-        var account = fields.GetValueOrDefault("AccountNumber");
-        var banksTouched = fields.ContainsKey("RoutingNumber") || fields.ContainsKey("AccountNumber");
-        if (banksTouched && !string.IsNullOrEmpty(ctx.BankDetailsId) && !string.IsNullOrEmpty(routing))
+        // ---- Banking (BankDetails, LCTI + existing record keys; routing must resolve to a
+        //      bank in the ByDesign bank directory). SAP keeps bank accounts as validity-
+        //      dated records, so a bank *change* end-dates the prior record and adds a new
+        //      one rather than overwriting in place. schema order per record: ID,
+        //      BankRoutingID, BankRoutingIDTypeCode, BankAccountID, ValidityPeriod. ----
+        if (ctx.Bank is { } bank)
         {
             supplier.Add(new XAttribute("bankDetailsListCompleteTransmissionIndicator", "true"));
-            var bank = new XElement("BankDetails",
-                new XAttribute("actionCode", "04"),
-                new XElement("ID", ctx.BankDetailsId),
-                new XElement("BankRoutingID", routing),
-                // US ABA routing standard (default when the source record has no type).
-                new XElement("BankRoutingIDTypeCode", string.IsNullOrEmpty(ctx.BankRoutingIdTypeCode) ? "ABA" : ctx.BankRoutingIdTypeCode));
-            if (!string.IsNullOrEmpty(account))
-                bank.Add(new XElement("BankAccountID", account));
-            supplier.Add(bank);
+            // End-date the outgoing account first (bank change A -> B), then the new/active one.
+            if (bank.Prior is { } prior)
+                supplier.Add(BankElement("04", prior.Id, prior.RoutingId, prior.RoutingIdTypeCode,
+                    prior.AccountId, prior.ValidFrom, prior.ValidTo));
+            supplier.Add(BankElement(bank.ActionCode, bank.Id, bank.RoutingId, bank.RoutingIdTypeCode,
+                bank.AccountId, bank.WriteValidity ? bank.ValidFrom : null, bank.WriteValidity ? bank.ValidTo : null));
         }
 
         return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
             new XElement("BasicMessageHeader"),
             supplier));
+    }
+
+    /// <summary>SAP's high date for an unlimited "valid to" (9999-12-31).</summary>
+    public static readonly DateOnly UnlimitedDate = new(9999, 12, 31);
+
+    private static XElement BankElement(string actionCode, string id, string? routing, string? routingType,
+        string? account, DateOnly? validFrom, DateOnly? validTo)
+    {
+        var el = new XElement("BankDetails",
+            new XAttribute("actionCode", actionCode),
+            new XElement("ID", id));
+        if (!string.IsNullOrEmpty(routing))
+        {
+            el.Add(new XElement("BankRoutingID", routing));
+            // US ABA routing standard (default when the source record has no type).
+            el.Add(new XElement("BankRoutingIDTypeCode", string.IsNullOrEmpty(routingType) ? "ABA" : routingType));
+        }
+        if (!string.IsNullOrEmpty(account))
+            el.Add(new XElement("BankAccountID", account));
+        if (validFrom is not null && validTo is not null)
+            el.Add(new XElement("ValidityPeriod",
+                new XElement("StartDate", validFrom.Value.ToString("yyyy-MM-dd")),
+                new XElement("EndDate", validTo.Value.ToString("yyyy-MM-dd"))));
+        return el;
     }
 
     private static XElement ProcessingConditions() =>
@@ -118,7 +138,38 @@ internal static class Sap
 internal sealed class SapMaintainContext
 {
     public string? AddressUuid { get; set; }
-    public string? BankDetailsId { get; set; }
-    public string? BankRoutingId { get; set; }
-    public string? BankRoutingIdTypeCode { get; set; }
+
+    /// <summary>The bank-detail write to emit, resolved from the current supplier state
+    /// (create new / update in place / end-date-and-replace). Null when banking is untouched.</summary>
+    public SapBankMaintain? Bank { get; set; }
+}
+
+/// <summary>The active bank-detail record to write, plus (for a bank change) the prior
+/// record to end-date. Validity dates realise SAP's "valid from / valid to" on bank data.</summary>
+internal sealed class SapBankMaintain
+{
+    public required string Id { get; init; }
+    /// <summary>"01" to create a new record, "04" to update the existing one in place.</summary>
+    public required string ActionCode { get; init; }
+    public string? RoutingId { get; init; }
+    public string? RoutingIdTypeCode { get; init; }
+    public string? AccountId { get; init; }
+    /// <summary>Emit a ValidityPeriod for the active record (new/changed account only).</summary>
+    public bool WriteValidity { get; init; }
+    public DateOnly ValidFrom { get; init; }
+    public DateOnly ValidTo { get; init; }
+    /// <summary>Outgoing account to end-date when the vendor switches banks (A -> B).</summary>
+    public SapBankPriorClose? Prior { get; init; }
+}
+
+/// <summary>An existing bank record being closed out: its keys re-sent unchanged with a new
+/// valid-to (the day before the incoming account's valid-from).</summary>
+internal sealed class SapBankPriorClose
+{
+    public required string Id { get; init; }
+    public string? RoutingId { get; init; }
+    public string? RoutingIdTypeCode { get; init; }
+    public string? AccountId { get; init; }
+    public DateOnly ValidFrom { get; init; }
+    public DateOnly ValidTo { get; init; }
 }

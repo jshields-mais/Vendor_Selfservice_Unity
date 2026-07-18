@@ -84,6 +84,102 @@ public class SapByDesignErpClientTests
         Assert.Contains("<FirstLineName>Rocky Supply Co.</FirstLineName>", body);
     }
 
+    private const string MaintainOk = """
+    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
+      <n0:SupplierBundleMaintainConfirmation_sync xmlns:n0="http://sap.com/xi/SAPGlobal20/Global">
+        <Log><MaximumLogItemSeverityCode>1</MaximumLogItemSeverityCode></Log>
+      </n0:SupplierBundleMaintainConfirmation_sync>
+    </soap:Body></soap:Envelope>
+    """;
+
+    private static string SupplierWithBank(string bankXml) => $"""
+    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>
+      <n0:SupplierByElementsResponse_sync xmlns:n0="http://sap.com/xi/SAPGlobal20/Global">
+        <Supplier><InternalID>62440</InternalID>{bankXml}</Supplier>
+      </n0:SupplierByElementsResponse_sync>
+    </soap:Body></soap:Envelope>
+    """;
+
+    // Read-before-write posts a query first, then the maintain call. Route by body.
+    private static (SapByDesignErpClient, FakeHttpHandler) MakeBankFlow(string queryResponse) =>
+        Make((_, body) => FakeHttpHandler.Xml(
+            body.Contains("SupplierByElementsQuery_sync") ? queryResponse : MaintainOk));
+
+    private static readonly DateTimeOffset Approved = new(2026, 7, 18, 12, 0, 0, TimeSpan.Zero);
+
+    private const string ExistingBank = """
+      <BankDetails>
+        <ID>0001</ID>
+        <BankRoutingID>111000025</BankRoutingID>
+        <BankRoutingIDTypeCode>ABA</BankRoutingIDTypeCode>
+        <BankAccountID>23632465</BankAccountID>
+        <ValidityPeriod><StartDate>2020-01-01</StartDate><EndDate>9999-12-31</EndDate></ValidityPeriod>
+      </BankDetails>
+    """;
+
+    [Fact]
+    public async Task Banking_new_account_no_prior_is_created_valid_from_approval_to_unlimited()
+    {
+        var (client, handler) = MakeBankFlow(SupplierWithBank("")); // no BankDetails on file
+
+        await client.UpdateVendorMasterAsync("62440", new VendorMasterPatch
+        {
+            EffectiveDate = Approved,
+            Fields = { ["AccountNumber"] = "55551111", ["RoutingNumber"] = "222000111" },
+        });
+
+        var body = handler.Calls.Last().Body;
+        Assert.Contains("bankDetailsListCompleteTransmissionIndicator=\"true\"", body);
+        Assert.Contains("actionCode=\"01\"", body);          // create
+        Assert.Contains("<ID>0001</ID>", body);
+        Assert.Contains("<BankAccountID>55551111</BankAccountID>", body);
+        Assert.Contains("<StartDate>2026-07-18</StartDate>", body);
+        Assert.Contains("<EndDate>9999-12-31</EndDate>", body);
+    }
+
+    [Fact]
+    public async Task Banking_account_change_end_dates_prior_and_adds_new_record()
+    {
+        var (client, handler) = MakeBankFlow(SupplierWithBank(ExistingBank));
+
+        await client.UpdateVendorMasterAsync("62440", new VendorMasterPatch
+        {
+            EffectiveDate = Approved,
+            Fields = { ["AccountNumber"] = "99998888" },
+        });
+
+        var body = handler.Calls.Last().Body;
+        // Prior record 0001 kept, end-dated the day before the new valid-from.
+        Assert.Contains("<ID>0001</ID>", body);
+        Assert.Contains("<BankAccountID>23632465</BankAccountID>", body);
+        Assert.Contains("<EndDate>2026-07-17</EndDate>", body);
+        // New record 0002 created, valid from approval to unlimited.
+        Assert.Contains("actionCode=\"01\"", body);
+        Assert.Contains("<ID>0002</ID>", body);
+        Assert.Contains("<BankAccountID>99998888</BankAccountID>", body);
+        Assert.Contains("<StartDate>2026-07-18</StartDate>", body);
+        Assert.Contains("<EndDate>9999-12-31</EndDate>", body);
+    }
+
+    [Fact]
+    public async Task Banking_same_account_updates_in_place_without_validity()
+    {
+        var (client, handler) = MakeBankFlow(SupplierWithBank(ExistingBank));
+
+        await client.UpdateVendorMasterAsync("62440", new VendorMasterPatch
+        {
+            EffectiveDate = Approved,
+            Fields = { ["RoutingNumber"] = "111000099" }, // routing correction, same account
+        });
+
+        var body = handler.Calls.Last().Body;
+        Assert.Contains("<ID>0001</ID>", body);
+        Assert.Contains("actionCode=\"04\"", body);         // in place
+        Assert.Contains("<BankRoutingID>111000099</BankRoutingID>", body);
+        Assert.DoesNotContain("ValidityPeriod", body);      // validity untouched
+        Assert.DoesNotContain("<ID>0002</ID>", body);       // no new record
+    }
+
     [Fact]
     public async Task Update_throws_on_error_severity()
     {

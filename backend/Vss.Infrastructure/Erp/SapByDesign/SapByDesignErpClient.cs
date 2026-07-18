@@ -75,13 +75,7 @@ public class SapByDesignErpClient : IErpClient
             }
 
             if (needsBanking)
-            {
-                var bank = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "BankDetails");
-                string? B(string n) => bank?.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
-                ctx.BankDetailsId = B("ID");
-                ctx.BankRoutingId = B("BankRoutingID");
-                ctx.BankRoutingIdTypeCode = B("BankRoutingIDTypeCode");
-            }
+                ctx.Bank = ResolveBankMaintain(q, fields, patch.EffectiveDate);
         }
 
         var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
@@ -94,6 +88,95 @@ public class SapByDesignErpClient : IErpClient
 
         _log.LogInformation("[SAP ByD] MaintainBundle supplier {Number} — {Fields}", vendorNumber, string.Join(", ", patch.Fields.Keys));
     }
+
+    /// <summary>
+    /// Decides how to write bank details given the supplier's current bank record(s) and
+    /// the approval date, implementing SAP's validity-dated bank data:
+    /// <list type="bullet">
+    /// <item>No existing record → create one, valid from approval date to unlimited.</item>
+    /// <item>Account changed (A → B) → end-date the current record (valid-to = day before
+    ///   approval) and add a new record valid from approval date to unlimited.</item>
+    /// <item>Same account (e.g. routing correction) → update in place, validity untouched.</item>
+    /// </list>
+    /// </summary>
+    internal static SapBankMaintain ResolveBankMaintain(
+        XDocument query, IReadOnlyDictionary<string, string?> fields, DateTimeOffset? effectiveDate)
+    {
+        var validFrom = DateOnly.FromDateTime((effectiveDate ?? DateTimeOffset.UtcNow).UtcDateTime);
+
+        var banks = query.Descendants().Where(e => e.Name.LocalName == "BankDetails").ToList();
+        var existing = banks.FirstOrDefault();
+        string? E(string n) => existing?.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
+
+        var existingId = E("ID");
+        var existingRouting = E("BankRoutingID");
+        var existingType = E("BankRoutingIDTypeCode");
+        var existingAccount = E("BankAccountID");
+
+        var newAccount = fields.GetValueOrDefault("AccountNumber");
+        var newRouting = fields.GetValueOrDefault("RoutingNumber") ?? existingRouting;
+
+        // No bank on file yet → create the first record, dated from approval to unlimited.
+        if (string.IsNullOrEmpty(existingId))
+            return new SapBankMaintain
+            {
+                Id = "0001", ActionCode = "01",
+                RoutingId = newRouting, RoutingIdTypeCode = existingType,
+                AccountId = newAccount ?? existingAccount,
+                WriteValidity = true, ValidFrom = validFrom, ValidTo = Sap.UnlimitedDate,
+            };
+
+        // A genuine account switch (A → B): end-date the current record and add a new one.
+        var accountChanged = !string.IsNullOrEmpty(newAccount)
+            && !string.IsNullOrEmpty(existingAccount)
+            && !AccountsEqual(newAccount, existingAccount);
+        if (accountChanged)
+        {
+            var existingStart = ParseSapDate(existing?.Elements()
+                .FirstOrDefault(e => e.Name.LocalName == "ValidityPeriod")
+                ?.Elements().FirstOrDefault(e => e.Name.LocalName == "StartDate")?.Value) ?? validFrom;
+
+            return new SapBankMaintain
+            {
+                Id = NextBankId(banks), ActionCode = "01",
+                RoutingId = newRouting, RoutingIdTypeCode = existingType,
+                AccountId = newAccount,
+                WriteValidity = true, ValidFrom = validFrom, ValidTo = Sap.UnlimitedDate,
+                Prior = new SapBankPriorClose
+                {
+                    Id = existingId!, RoutingId = existingRouting, RoutingIdTypeCode = existingType,
+                    AccountId = existingAccount,
+                    // Prior account stays valid until the day before the new one takes effect.
+                    ValidFrom = existingStart, ValidTo = validFrom.AddDays(-1),
+                },
+            };
+        }
+
+        // Same account (routing/other correction) → update in place, validity unchanged.
+        return new SapBankMaintain
+        {
+            Id = existingId!, ActionCode = "04",
+            RoutingId = newRouting, RoutingIdTypeCode = existingType,
+            AccountId = newAccount,
+            WriteValidity = false,
+        };
+    }
+
+    private static bool AccountsEqual(string a, string b) =>
+        a.Trim().TrimStart('0') == b.Trim().TrimStart('0');
+
+    /// <summary>Next sequential BankDetails ID ("0001" → "0002"), zero-padded to 4 digits.</summary>
+    private static string NextBankId(IEnumerable<XElement> banks)
+    {
+        var max = banks
+            .Select(b => b.Elements().FirstOrDefault(e => e.Name.LocalName == "ID")?.Value)
+            .Select(id => int.TryParse(id, out var n) ? n : 0)
+            .DefaultIfEmpty(0).Max();
+        return (max + 1).ToString("D4");
+    }
+
+    private static DateOnly? ParseSapDate(string? s) =>
+        DateOnly.TryParse(s, out var d) ? d : null;
 
     // ---------------------------------------------------------------- http
     private async Task<XDocument> PostAsync(string path, string soapAction, string envelope, CancellationToken ct)

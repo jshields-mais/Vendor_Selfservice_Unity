@@ -51,6 +51,11 @@ public class VendorMasterPatch
 {
     /// <summary>Field name → new value, as reviewed/approved by City staff.</summary>
     public Dictionary<string, string?> Fields { get; set; } = new();
+
+    /// <summary>When the change was approved in VSS. Drives SAP bank-detail validity
+    /// dating: a new/changed bank account becomes valid from this date. Null for writes
+    /// that don't need an effective date.</summary>
+    public DateTimeOffset? EffectiveDate { get; set; }
 }
 
 /// <summary>

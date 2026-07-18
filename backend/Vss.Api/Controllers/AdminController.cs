@@ -66,7 +66,8 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
         if (cr is null) return NotFound();
         if (cr.Vendor is null) return BadRequest("Change request has no vendor.");
 
-        var patch = new VendorMasterPatch();
+        var approvedAt = DateTimeOffset.UtcNow;
+        var patch = new VendorMasterPatch { EffectiveDate = approvedAt };
         foreach (var d in cr.Diffs)
         {
             var prop = typeof(Vendor).GetProperty(d.Field);
@@ -76,10 +77,10 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
         }
 
         await erp.UpdateVendorMasterAsync(cr.Vendor.Number, patch, ct);
-        cr.Vendor.LastSyncedAt = DateTimeOffset.UtcNow;
+        cr.Vendor.LastSyncedAt = approvedAt;
 
         cr.Status = ChangeRequestStatus.Approved;
-        cr.DecidedAt = DateTimeOffset.UtcNow;
+        cr.DecidedAt = approvedAt;
         cr.DecisionNote = decision?.Note;
         await db.SaveChangesAsync(ct);
         return NoContent();
