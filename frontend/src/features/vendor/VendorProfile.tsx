@@ -8,7 +8,11 @@ import {
 } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "readonly";
-interface FieldDef { key: string; label: string; value: string; kind: Kind; options?: string[]; full?: boolean; }
+interface FieldDef {
+  key: string; label: string; value: string; kind: Kind; options?: string[]; full?: boolean;
+  /** Optional: field is shown only when this returns true for the current edited values. */
+  showWhen?: (values: Record<string, string>) => boolean;
+}
 
 const TABS = [
   { id: "company", label: "Company" },
@@ -62,13 +66,17 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
       sel("RemitCountry", "Country", v.address.remitCountry, ["United States", "Canada"]),
       t("PhysicalAddress", "Physical address", v.address.physicalAddress, true),
     ];
-    case "banking": return [
-      sel("PaymentMethod", "Payment method", v.banking.paymentMethod, ["ACH / EFT", "Check", "Wire"]),
-      t("BankName", "Bank name", v.banking.bankName),
-      t("RoutingNumber", "ABA Routing Number", v.banking.routingNumberMasked),
-      t("AccountNumber", "Account number", v.banking.accountNumberMasked),
-      sel("AccountType", "Account type", v.banking.accountType, ["Checking", "Savings"]),
-    ];
+    case "banking": {
+      // Bank detail fields only apply to electronic payment methods (not Check).
+      const needsBank = (vals: Record<string, string>) => vals.PaymentMethod !== "Check";
+      return [
+        sel("PaymentMethod", "Payment method", v.banking.paymentMethod, ["ACH / EFT", "Check", "Wire"]),
+        { ...t("BankName", "Bank name", v.banking.bankName), showWhen: needsBank },
+        { ...t("RoutingNumber", "ABA Routing Number", v.banking.routingNumberMasked), showWhen: needsBank },
+        { ...t("AccountNumber", "Account number", v.banking.accountNumberMasked), showWhen: needsBank },
+        { ...sel("AccountType", "Account type", v.banking.accountType, ["Checking", "Savings"]), showWhen: needsBank },
+      ];
+    }
     case "tax": return [
       t("LegalTaxName", "Legal tax name", v.tax.legalTaxName, true),
       sel("TaxIdType", "Tax ID type", v.tax.taxIdType, ["EIN", "SSN", "ITIN"]),
@@ -146,7 +154,11 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
   const fields = useMemo(() => fieldsFor(tab, vendor), [tab, vendor]);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, f.value])));
 
-  const diffs: ChangeDiff[] = fields
+  // Fields whose showWhen predicate passes for the current values (e.g. bank details
+  // only appear for electronic payment methods). Hidden fields never submit.
+  const visible = fields.filter((f) => !f.showWhen || f.showWhen(values));
+
+  const diffs: ChangeDiff[] = visible
     .filter((f) => f.kind !== "readonly" && values[f.key] !== f.value)
     .map((f) => ({ field: f.key, fromValue: f.value, toValue: values[f.key] }));
 
@@ -158,7 +170,7 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
   return (
     <>
       <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 22px" }}>
-        {fields.map((f) => (
+        {visible.map((f) => (
           <div key={f.key} style={f.full ? { gridColumn: "span 2" } : undefined}>
             <Label>{f.label}</Label>
             {f.kind === "readonly" ? <ReadonlyField value={f.value} />
