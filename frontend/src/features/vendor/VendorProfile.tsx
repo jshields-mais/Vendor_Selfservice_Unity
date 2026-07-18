@@ -14,16 +14,6 @@ interface FieldDef {
   showWhen?: (values: Record<string, string>) => boolean;
 }
 
-const TABS = [
-  { id: "company", label: "Company" },
-  { id: "contacts", label: "Contacts" },
-  { id: "addresses", label: "Addresses" },
-  { id: "banking", label: "Banking & remittance" },
-  { id: "tax", label: "Tax & W-9" },
-  { id: "documents", label: "Documents" },
-  { id: "categories", label: "Category codes" },
-];
-
 const META: Record<string, { title: string; hint: string; section: string }> = {
   company: { title: "Company profile", hint: "Your legal business identity as it appears in the ERP.", section: "Company profile" },
   contacts: { title: "Contacts", hint: "People the City reaches for orders, payments and sales.", section: "Contacts" },
@@ -117,42 +107,25 @@ export function VendorProfile() {
   }
 
   return (
-    <AppShell title="My vendor record" crumb="Vendor Portal">
-      <div style={{ display: "flex", gap: 22, alignItems: "flex-start" }}>
-        {/* tab rail */}
-        <div style={{ flex: "0 0 208px", background: "#fff", border: "1px solid var(--border-1)", borderRadius: 10, padding: 8, position: "sticky", top: 0 }}>
-          {TABS.map((x) => {
-            const active = x.id === tab;
-            return (
-              <button key={x.id} onClick={() => nav(`/profile/${x.id}`)} style={{
-                width: "100%", textAlign: "left", padding: "10px 14px", border: "none", borderRadius: 6, cursor: "pointer", marginBottom: 2,
-                background: active ? "var(--bg-accent-soft)" : "transparent", color: active ? "var(--color-teal-700)" : "var(--fg-1)",
-                fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: active ? 600 : 500,
-              }}>{x.label}</button>
-            );
-          })}
-        </div>
+    <AppShell title="My vendor record" crumb="Vendor portal">
+      <div style={{ maxWidth: 940 }}>
+        <Card>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-1)" }}>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18 }}>{meta.title}</div>
+            <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 3 }}>{meta.hint}</div>
+          </div>
 
-        {/* panel */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Card>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-1)" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18 }}>{meta.title}</div>
-              <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 3 }}>{meta.hint}</div>
-            </div>
-
-            {tab === "documents" ? <DocumentsPanel vendor={vendor} />
-              : tab === "categories" ? <CategoriesPanel vendor={vendor} />
-              : <FieldEditor key={tab} tab={tab} vendor={vendor} section={meta.section}
-                  onSubmitted={async () => {
-                    await Promise.all([
-                      qc.invalidateQueries({ queryKey: qk.me }),
-                      qc.invalidateQueries({ queryKey: qk.changeRequests }),
-                    ]);
-                    nav("/submitted");
-                  }} />}
-          </Card>
-        </div>
+          {tab === "documents" ? <DocumentsPanel vendor={vendor} />
+            : tab === "categories" ? <CategoriesPanel vendor={vendor} />
+            : <FieldEditor key={tab} tab={tab} vendor={vendor} section={meta.section}
+                onSubmitted={async () => {
+                  await Promise.all([
+                    qc.invalidateQueries({ queryKey: qk.me }),
+                    qc.invalidateQueries({ queryKey: qk.changeRequests }),
+                  ]);
+                  nav("/submitted");
+                }} />}
+        </Card>
       </div>
     </AppShell>
   );

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useApiQuery } from "@univerus/udp-react-enterprise-component-library";
 import { useAuth } from "../auth/authProvider";
@@ -14,13 +14,21 @@ const ICONS: Record<string, string> = {
   link: "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1",
   changes: "M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5",
   plug: "M9 2v6M15 2v6M7 8h10v3a5 5 0 0 1-10 0zM12 16v6",
+  pin: "M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  bank: "M3 10 12 4l9 6M4 10v8M20 10v8M9 10v8M15 10v8M3 21h18",
+  receipt: "M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4",
 };
 
 interface NavItem { label: string; icon: keyof typeof ICONS; to: string; badge?: number; }
 
+// Vendor-facing menu: the profile sections now live in the side sheet itself.
 const VENDOR_NAV: NavItem[] = [
   { label: "Home", icon: "home", to: "/console" },
   { label: "Company profile", icon: "company", to: "/profile/company" },
+  { label: "Contacts", icon: "contacts", to: "/profile/contacts" },
+  { label: "Addresses", icon: "pin", to: "/profile/addresses" },
+  { label: "Banking & remittance", icon: "bank", to: "/profile/banking" },
+  { label: "Tax & W-9", icon: "receipt", to: "/profile/tax" },
   { label: "Documents", icon: "docs", to: "/profile/documents" },
   { label: "Category codes", icon: "tag", to: "/profile/categories" },
 ];
@@ -37,6 +45,10 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
   const isAdmin = role === "admin";
 
   const { data: stats } = useApiQuery<AdminStats>(VSS_BASE, "api/v1/admin/stats", undefined, { enabled: isAdmin });
+
+  // Collapsible side sheet — toggled from the header; when off it auto-hides. Persisted.
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("vss.nav.collapsed") === "1");
+  const toggleNav = () => setCollapsed((c) => { const n = !c; localStorage.setItem("vss.nav.collapsed", n ? "1" : "0"); return n; });
 
   const adminNav: NavItem[] = [
     { label: "Home", icon: "home", to: "/admin" },
@@ -59,6 +71,7 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      {!collapsed && (
       <aside style={{ width: 236, flex: "0 0 236px", background: "var(--color-navy)", color: "#fff", display: "flex", flexDirection: "column", padding: "20px 0" }}>
         <div style={{ padding: "0 20px 22px", display: "flex", alignItems: "center", gap: 11, borderBottom: "1px solid rgba(255,255,255,.09)" }}>
           <div style={{ width: 34, height: 34, borderRadius: 6, background: "var(--color-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>V</div>
@@ -104,12 +117,23 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
           <button onClick={() => { logout(); nav("/login"); }} style={{ width: "100%", marginTop: 8, padding: 9, border: "none", borderRadius: 6, background: "transparent", color: "rgba(255,255,255,.55)", fontFamily: "var(--font-sans)", fontSize: 12, cursor: "pointer" }}>Sign out</button>
         </div>
       </aside>
+      )}
 
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <header style={{ height: 62, flex: "0 0 62px", background: "#fff", borderBottom: "1px solid var(--border-1)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px" }}>
-          <div>
-            <div style={{ fontSize: 11, color: "var(--fg-3)", letterSpacing: ".06em" }}>{crumb}</div>
-            <h1 style={{ fontSize: 19, lineHeight: 1.1 }}>{title}</h1>
+        <header style={{ height: 62, flex: "0 0 62px", background: "#fff", borderBottom: "1px solid var(--border-1)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+            <button
+              onClick={toggleNav}
+              title={collapsed ? "Show menu" : "Hide menu"}
+              aria-label={collapsed ? "Show menu" : "Hide menu"}
+              style={{ flex: "0 0 auto", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-1)", borderRadius: 8, background: "#fff", cursor: "pointer", color: "var(--fg-1)" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+            </button>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: "var(--fg-3)", letterSpacing: ".06em" }}>{crumb}</div>
+              <h1 style={{ fontSize: 19, lineHeight: 1.1 }}>{title}</h1>
+            </div>
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", borderRadius: 999, background: conn.bg, color: conn.fg, fontSize: 12, fontWeight: 600 }}>
             <span style={{ width: 8, height: 8, borderRadius: 999, background: "currentColor" }} />
