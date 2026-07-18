@@ -91,11 +91,52 @@ The data/config/auth layer already uses the **real** documented Unity APIs
 
 ## ERP integration
 
-All ERP access goes through `IErpClient` (`backend/Vss.Infrastructure/Erp`). The current
-`StubErpClient` serves seeded vendors, matches linking credentials, and logs the "push"
-on approval. To go live, implement `UnityErpClient` against
-`ConfigService.integrationV2ApiUrl` (`/vendors/{id}`, `/vendors/match`,
-`/vendors/{id}/master`) and register it in `Program.cs` in place of the stub.
+All ERP access goes through `IErpClient` (`backend/Vss.Infrastructure/Erp`). The active
+connector is chosen by **`Erp:Provider`** and registered by `AddErpClient(...)`:
+
+| `Erp:Provider` | Connector | Transport / auth |
+|---|---|---|
+| `Stub` (default) | `StubErpClient` | in-memory seeded suppliers (dev) |
+| `BusinessCentral` | `BusinessCentralErpClient` | Dynamics 365 BC OData v2.0 REST; OAuth2 client-credentials (Entra ID); GET/PATCH + ETag |
+| `SapByDesign` | `SapByDesignErpClient` | SAP ByDesign SOAP — `QuerySupplierIn` (read/match) + `ManageSupplierIn` (write); HTTP Basic |
+
+Each maps to `IErpClient.GetVendorAsync` / `MatchVendorAsync` / `UpdateVendorMasterAsync`
+(approval calls `UpdateVendorMasterAsync`, which pushes the change to the ERP master).
+
+**Going live** (config in `appsettings.json` / env; **secrets only via user-secrets/env/k8s Secret**):
+
+```bash
+cd backend/Vss.Api
+# Business Central
+dotnet user-secrets set "Erp:Provider" "BusinessCentral"
+dotnet user-secrets set "Erp:BusinessCentral:BaseUrl"   "https://api.businesscentral.dynamics.com/v2.0/<tenant>/<env>/api/v2.0"
+dotnet user-secrets set "Erp:BusinessCentral:CompanyId" "<company-guid>"
+dotnet user-secrets set "Erp:BusinessCentral:TenantId"  "<entra-tenant-id>"
+dotnet user-secrets set "Erp:BusinessCentral:ClientId"  "<app-client-id>"
+dotnet user-secrets set "Erp:BusinessCentral:ClientSecret" "<secret>"        # secret
+dotnet user-secrets set "Erp:BusinessCentral:SampleVendorNumber" "<a-known-vendor>"
+
+# SAP Business ByDesign
+dotnet user-secrets set "Erp:Provider" "SapByDesign"
+dotnet user-secrets set "Erp:SapByDesign:BaseUrl"  "https://myNNNNNN.sapbydesign.com"
+dotnet user-secrets set "Erp:SapByDesign:Username" "<comm-arrangement-user>"
+dotnet user-secrets set "Erp:SapByDesign:Password" "<secret>"                # secret
+dotnet user-secrets set "Erp:SapByDesign:SampleSupplierId" "<a-known-supplier>"
+```
+(env-var form for containers: `Erp__BusinessCentral__ClientSecret`, `Erp__SapByDesign__Password`, …)
+
+Then **verify connectivity** from the admin **ERP integration** screen → *Test connection*
+(or `POST /api/v1/admin/erp/test`), which pings the configured ERP and reports
+`{provider, ok, latencyMs, message}`.
+
+**Notes / TODO for live wiring:**
+- **SAP ByDesign** SOAP element namespaces + write-side field nesting are tenant/WSDL-specific.
+  They're centralised in `Erp/SapByDesign/Sap.cs` (marked `[TODO]`); confirm against your
+  sandbox WSDL / sample payloads. `QuerySupplierPath` / `ManageSupplierPath` may differ per tenant.
+- **Business Central** banking fields (routing/account) aren't on the standard `vendor`
+  entity — they live under `vendorBankAccounts` (a second call, currently skipped/TODO).
+- The invitation **PIN** has no ERP equivalent; ERP matching is by vendor number or Tax ID +
+  ZIP, and the PIN is verified app-side.
 
 ## Verified
 
@@ -108,9 +149,10 @@ on approval. To go live, implement `UnityErpClient` against
 
 ## Not in this phase
 
-The real `UnityErpClient` (replace the stub), document binary storage, and hardening
-of the ERP-config screen (currently presentational). Dev-only `POST /api/v1/dev/reset`
-wipes and reseeds the database (404s unless `Auth:Mode=Dev`).
+Document binary storage; persisting ERP connection settings from the admin ERP screen
+(its config fields are presentational — only *Test connection* is live); and the
+connector TODOs above (ByDesign WSDL specifics, BC `vendorBankAccounts`). Dev-only
+`POST /api/v1/dev/reset` wipes and reseeds the database (404s unless `Auth:Mode=Dev`).
 
 ## CI / Deployment
 

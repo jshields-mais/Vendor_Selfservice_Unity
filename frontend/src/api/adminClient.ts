@@ -41,8 +41,11 @@ export const useAdminChangeRequest = (id: string) => useApiQuery<ChangeRequest>(
 export const useAdminVendors = () => useApiQuery<AdminVendor[]>(VSS_BASE, "api/v1/admin/vendors");
 export const useAdminLinkRequests = () => useApiQuery<AdminLinkRequest[]>(VSS_BASE, "api/v1/admin/link-requests");
 
+export interface ErpTestResult { provider: string; ok: boolean; latencyMs: number; message: string; }
+
 // ------------------------------------------------------------------ Mutations
 export const adminApi = {
+  testErp: () => apiMutate<ErpTestResult>(VSS_BASE, "api/v1/admin/erp/test", { method: "POST" }),
   approveChange: (id: string, note?: string) =>
     apiMutate<void>(VSS_BASE, `api/v1/admin/change-requests/${id}/approve`, { method: "POST", body: { note } }),
   rejectChange: (id: string, note?: string) =>

@@ -1,5 +1,8 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Card, CardHeader, Button, Label, TextField, SelectField, Banner } from "../../ui";
+import { adminApi, type ErpTestResult } from "../../api/adminClient";
 
 /**
  * ERP integration config. Presentational for now — reflects the connection the
@@ -20,6 +23,9 @@ const SYNC_LOG = [
 ];
 
 export function AdminErp() {
+  const [result, setResult] = useState<ErpTestResult | null>(null);
+  const test = useMutation({ mutationFn: () => adminApi.testErp(), onSuccess: setResult });
+
   return (
     <AppShell title="ERP integration" crumb="Administration">
       <Banner tone="info">Config shown is the interface the backend uses (`IErpClient`). It's stubbed today; wire to a real config store when `UnityErpClient` is implemented.</Banner>
@@ -61,7 +67,15 @@ export function AdminErp() {
               <div style={{ display: "flex", justifyContent: "space-between" }}><span>Environment</span><b style={{ color: "var(--fg-1)" }}>Stub (dev)</b></div>
               <div style={{ display: "flex", justifyContent: "space-between" }}><span>API version</span><b style={{ color: "var(--fg-1)" }}>v2</b></div>
             </div>
-            <Button variant="outline" style={{ width: "100%", marginTop: 18 }}>Test connection</Button>
+            <Button variant="outline" style={{ width: "100%", marginTop: 18 }} disabled={test.isPending} onClick={() => test.mutate()}>
+              {test.isPending ? "Testing…" : "Test connection"}
+            </Button>
+            {result && (
+              <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: result.ok ? "#DFF3E8" : "#FBE3E1", color: result.ok ? "#19663F" : "#8A231E" }}>
+                {result.provider} · {result.ok ? "OK" : "Failed"} · {result.latencyMs}ms
+                <div style={{ fontWeight: 400, marginTop: 2 }}>{result.message}</div>
+              </div>
+            )}
             <Button variant="teal" style={{ width: "100%", marginTop: 10 }}>Save configuration</Button>
           </Card>
           <Card style={{ padding: 22 }}>

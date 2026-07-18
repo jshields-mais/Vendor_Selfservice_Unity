@@ -29,6 +29,10 @@ docker build -f deploy/frontend.Dockerfile -t REGISTRY/vss-frontend:TAG .
   `REGISTRY/vss-frontend:TAG` everywhere with your registry and an immutable tag.
 - **`vss-secrets` Secret** — create it with key `db-connection` (the SQL Server
   connection string for `ConnectionStrings__Vss`). Add Entra/`AzureAd` values here too.
+- **ERP config + secrets** — set `Erp__Provider` (`BusinessCentral` | `SapByDesign`) and
+  its non-secret settings via env; put secrets in `vss-secrets`:
+  `Erp__BusinessCentral__ClientSecret` or `Erp__SapByDesign__Password`. See the root
+  README "ERP integration" for the full key list.
 - **Entra config** — the backend runs with `Auth__Mode=Entra`; supply the
   `Microsoft.Identity.Web` / `AzureAd__*` settings. The frontend bakes
   `REACT_APP_*` (auth mode, Entra, Unity, API domain) in at **image build time**

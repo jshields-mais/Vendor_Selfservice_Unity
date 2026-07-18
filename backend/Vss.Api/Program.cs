@@ -13,8 +13,8 @@ var conn = builder.Configuration.GetConnectionString("Vss")
     ?? "Server=.\\SQLEXPRESS;Database=Vss;Trusted_Connection=True;TrustServerCertificate=True";
 builder.Services.AddDbContext<VssDbContext>(o => o.UseSqlServer(conn));
 
-// ---- ERP boundary (stub now; swap UnityErpClient later) ----
-builder.Services.AddSingleton<IErpClient, StubErpClient>();
+// ---- ERP boundary (Stub | SapByDesign | BusinessCentral, per Erp:Provider) ----
+builder.Services.AddErpClient(builder.Configuration);
 
 // ---- Current-user resolution ----
 builder.Services.AddHttpContextAccessor();

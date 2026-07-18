@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Vss.Api.Contracts;
 using Vss.Domain;
 using Vss.Infrastructure;
@@ -8,16 +10,42 @@ using Vss.Infrastructure.Erp;
 
 namespace Vss.Api.Controllers;
 
-/// <summary>
-/// City-staff endpoints. Vendor-first phase ships the change-request approval path
-/// (which completes the ERP round-trip) plus read lists; the full admin UI/endpoints
-/// are the next phase.
-/// </summary>
+/// <summary>City-staff endpoints: change/link approval, vendors, and an ERP
+/// connectivity check.</summary>
 [ApiController]
 [Route("api/v1/admin")]
 [Authorize(Policy = "Admin")]
-public class AdminController(VssDbContext db, IErpClient erp) : ControllerBase
+public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOptions> erpOptions) : ControllerBase
 {
+    /// <summary>Pings the configured ERP (GetVendor on a sample id) and reports status.</summary>
+    [HttpPost("erp/test")]
+    public async Task<IActionResult> ErpTest(CancellationToken ct)
+    {
+        var opt = erpOptions.Value;
+        var sample = opt.Provider.Equals("BusinessCentral", StringComparison.OrdinalIgnoreCase) ? opt.BusinessCentral.SampleVendorNumber
+            : opt.Provider.Equals("SapByDesign", StringComparison.OrdinalIgnoreCase) ? opt.SapByDesign.SampleSupplierId
+            : "V-10485";
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var v = await erp.GetVendorAsync(sample ?? "", ct);
+            sw.Stop();
+            return Ok(new
+            {
+                provider = opt.Provider,
+                ok = true,
+                latencyMs = sw.ElapsedMilliseconds,
+                message = v is null ? $"Connected; sample '{sample}' not found" : $"Connected; found {v.Number} — {v.LegalName}",
+            });
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            return Ok(new { provider = opt.Provider, ok = false, latencyMs = sw.ElapsedMilliseconds, message = ex.Message });
+        }
+    }
+
     [HttpGet("change-requests")]
     public async Task<ActionResult<IEnumerable<ChangeRequestDto>>> ChangeRequests(CancellationToken ct)
     {
