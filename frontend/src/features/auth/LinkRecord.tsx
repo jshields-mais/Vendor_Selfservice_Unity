@@ -52,7 +52,7 @@ export function LinkRecord() {
 
   return (
     <AuthLayout>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 999, background: "#DFF3E8", color: "#19663F", fontSize: 12, fontWeight: 600, marginBottom: 18 }}>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 999, background: "var(--colorStatusSuccessBackground1)", color: "var(--colorStatusSuccessForeground1)", fontSize: 12, fontWeight: 600, marginBottom: 18 }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Email verified
       </div>
       <h2 style={{ fontSize: 26, margin: 0 }}>Link your company record</h2>
@@ -60,7 +60,7 @@ export function LinkRecord() {
         Match your account to your existing vendor record in the City's ERP.
       </p>
 
-      {error && <div style={{ background: "#FBE3E1", color: "#8A231E", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {error && <div style={{ background: "var(--colorStatusDangerBackground1)", color: "var(--colorStatusDangerForeground1)", borderRadius: 8, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
       {!match ? (
         <>

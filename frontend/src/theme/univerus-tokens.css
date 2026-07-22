@@ -1,79 +1,160 @@
 /* =============================================================
-   Univerus Design System — Visual Identity Guide v4 (Jan 2026)
-   Teal #34A7AD · Navy #0C2F50 · Exo 2 / Montserrat / Open Sans
-   Tokens transcribed from the VSS design artifact.
+   Univerus Design System — Foundations
+   Fluent UI v2 token model (matches the udp Fluent web components).
+   Brand = Fluent communicationBlue (#0f6cbd); navy (#19314e) is
+   app-chrome only. Type = Inter (brand) + Cascadia Code (mono).
+   Legacy app aliases (--fg-*, --bg-*, --color-teal*, --radius-*)
+   are remapped onto these tokens so existing components adopt the
+   standard without per-component edits.
    ============================================================= */
-@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap");
+
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/Inter-VariableFont_opsz_wght.ttf") format("truetype-variations"),
+       url("./fonts/Inter-VariableFont_opsz_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cascadia Code";
+  src: url("./fonts/CascadiaCode-VariableFont_wght.ttf") format("truetype-variations"),
+       url("./fonts/CascadiaCode-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  --color-teal: #34a7ad;
-  --color-teal-600: #2a8a8f;
-  --color-teal-700: #1f6f73;
-  --color-teal-300: #7ac8cc;
-  --color-teal-100: #d6eff0;
-  --color-teal-50: #edf7f8;
+  /* ---- Fluent brand ramp (communicationBlue) ---- */
+  --colorBrandBackground: #0f6cbd;
+  --colorBrandBackgroundHover: #115ea3;
+  --colorBrandBackgroundPressed: #0c3b5e;
+  --colorBrandBackground2: #ebf3fc;
+  --colorBrandForeground1: #115ea3;
+  --colorBrandForeground2: #0f548c;
+  --colorBrandForegroundLink: #115ea3;
+  --colorBrandStroke1: #0f6cbd;
+  --colorBrandStroke2: #b4d6fa;
 
-  --color-navy: #0c2f50;
-  --color-navy-600: #0a2642;
+  /* ---- App chrome (navy app bar / rail) ---- */
+  --colorAppHeader: #19314e;
+  --colorAppHeaderForeground: #ffffff;
+
+  /* ---- Fluent neutrals ---- */
+  --colorNeutralForeground1: #242424;
+  --colorNeutralForeground2: #424242;
+  --colorNeutralForeground3: #616161;
+  --colorNeutralForeground4: #707070;
+  --colorNeutralForegroundDisabled: #bdbdbd;
+  --colorNeutralBackground1: #ffffff;
+  --colorNeutralBackground1Hover: #f5f5f5;
+  --colorNeutralBackground1Pressed: #e0e0e0;
+  --colorNeutralBackground2: #fafafa;
+  --colorNeutralBackground3: #f5f5f5;
+  --colorNeutralBackgroundDisabled: #f0f0f0;
+  --colorSubtleBackgroundHover: #f5f5f5;
+  --colorNeutralStroke1: #d1d1d1;
+  --colorNeutralStroke2: #e0e0e0;
+  --colorNeutralStroke3: #f0f0f0;
+  --colorNeutralStrokeAccessible: #616161;
+
+  /* ---- Fluent status ---- */
+  --colorStatusSuccessBackground1: #f1faf1;
+  --colorStatusSuccessBackground3: #107c10;
+  --colorStatusSuccessForeground1: #0e700e;
+  --colorStatusSuccessBorder1: #9fd89f;
+  --colorStatusWarningBackground1: #fff9f5;
+  --colorStatusWarningForeground1: #bc4b09;
+  --colorStatusWarningBorder1: #fdcfb4;
+  --colorStatusDangerBackground1: #fdf3f4;
+  --colorStatusDangerBackground3: #c50f1f;
+  --colorStatusDangerForeground1: #b10e1c;
+  --colorStatusDangerBorder1: #eeacb2;
+  --colorStatusInfoBackground1: #f3f8fc;
+  --colorStatusInfoForeground1: #0f548c;
+  --colorStatusInfoBorder1: #a9d3f2;
+
+  /* ---- Fluent depth ramp ---- */
+  --shadow2: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+  --shadow4: 0 0 2px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.14);
+  --shadow8: 0 0 2px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.14);
+  --shadow16: 0 0 2px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.14);
+  --shadow28: 0 0 8px rgba(0,0,0,0.12), 0 14px 28px rgba(0,0,0,0.20);
+
+  /* =================================================================
+     Legacy app aliases → remapped onto Fluent tokens.
+     (Teal is gone; the old teal aliases now resolve to brand blue.)
+     ================================================================= */
+  --color-teal: var(--colorBrandBackground);      /* #0f6cbd */
+  --color-teal-600: var(--colorBrandBackgroundHover);
+  --color-teal-700: var(--colorBrandForeground2);
+  --color-teal-300: var(--colorBrandStroke2);
+  --color-teal-100: #cfe4fa;
+  --color-teal-50: var(--colorBrandBackground2);
+
+  --color-navy: var(--colorAppHeader);            /* #19314e */
+  --color-navy-600: #122840;
   --color-navy-300: #3d5a78;
   --color-navy-100: #ced7e0;
 
-  --color-yellow: #ffcb05;
-  --color-orange: #f58220;
+  --color-yellow: #fde300;
+  --color-orange: #f7630c;
 
-  --color-gray-100: #e6e7e8;
-  --color-gray-500: #a7a9ac;
-  --color-gray-700: #4d4d4f;
-  --color-gray-900: #1a1a1c;
+  --color-gray-100: #e0e0e0;
+  --color-gray-500: #bdbdbd;
+  --color-gray-700: #616161;
+  --color-gray-900: #242424;
   --color-white: #ffffff;
 
-  --fg-1: #0c2f50;
-  --fg-2: #4d4d4f;
-  --fg-3: #7a7c7f;
+  --fg-1: var(--colorNeutralForeground1);         /* #242424 */
+  --fg-2: var(--colorNeutralForeground3);         /* #616161 */
+  --fg-3: var(--colorNeutralForeground4);         /* #707070 */
 
-  --bg-1: #ffffff;
-  --bg-2: #f6f7f8;
-  --bg-3: #e6e7e8;
-  --bg-accent: #34a7ad;
-  --bg-accent-soft: #edf7f8;
-  --bg-deep: #0c2f50;
+  --bg-1: var(--colorNeutralBackground1);         /* #ffffff */
+  --bg-2: var(--colorNeutralBackground2);         /* #fafafa */
+  --bg-3: var(--colorNeutralBackground3);         /* #f5f5f5 */
+  --bg-accent: var(--colorBrandBackground);
+  --bg-accent-soft: var(--colorBrandBackground2); /* #ebf3fc */
+  --bg-deep: var(--colorAppHeader);
 
-  --border-1: #e6e7e8;
-  --border-2: #ced7e0;
+  --border-1: var(--colorNeutralStroke2);         /* #e0e0e0 dividers */
+  --border-2: var(--colorNeutralStroke1);         /* #d1d1d1 outlines */
 
-  --status-success: #2f9e66;
-  --status-warning: #ffcb05;
-  --status-danger: #d0342c;
+  --status-success: var(--colorStatusSuccessBackground3); /* #107c10 */
+  --status-warning: var(--colorStatusWarningForeground1); /* #bc4b09 */
+  --status-danger: var(--colorStatusDangerBackground3);   /* #c50f1f */
 
-  --font-display: "Exo 2", system-ui, sans-serif;
-  --font-sans: "Montserrat", system-ui, sans-serif;
+  --font-display: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "Cascadia Mono", Consolas, "Courier New", monospace;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-pill: 999px;
+  --radius-sm: 2px;
+  --radius-md: 4px;   /* Fluent default */
+  --radius-lg: 6px;
+  --radius-pill: 9999px;
 
-  --shadow-1: 0 1px 2px rgba(12, 47, 80, 0.06), 0 1px 1px rgba(12, 47, 80, 0.04);
-  --shadow-2: 0 2px 6px rgba(12, 47, 80, 0.08), 0 1px 2px rgba(12, 47, 80, 0.06);
-  --shadow-3: 0 8px 24px rgba(12, 47, 80, 0.1), 0 2px 6px rgba(12, 47, 80, 0.06);
+  --shadow-1: var(--shadow2);
+  --shadow-2: var(--shadow4);
+  --shadow-3: var(--shadow16);
 
-  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-entrance: cubic-bezier(0.33, 0, 0.67, 1);
 }
 
 * { box-sizing: border-box; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body {
   margin: 0;
-  background: var(--bg-2);
-  color: var(--fg-1);
+  background: var(--colorNeutralBackground2);   /* flat #fafafa page */
+  color: var(--colorNeutralForeground1);
   font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 14px;                              /* Fluent base body */
+  line-height: 20px;
 }
-h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; color: var(--fg-1); margin: 0; }
-a { color: var(--color-teal); text-decoration: none; }
-a:hover { color: var(--color-teal-600); }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; color: var(--colorNeutralForeground1); margin: 0; }
+a { color: var(--colorBrandForegroundLink); text-decoration: none; }
+a:hover { color: var(--colorBrandForeground2); }
 input, select, textarea, button { font-family: var(--font-sans); }
-::placeholder { color: #9aa0a6; }
-::selection { background: var(--color-teal); color: #fff; }
+::placeholder { color: var(--colorNeutralForeground3); }
+::selection { background: var(--colorBrandBackground); color: #fff; }
 @keyframes vssFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

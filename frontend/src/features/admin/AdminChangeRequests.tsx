@@ -20,7 +20,7 @@ export function AdminChangeRequests() {
             </tr></thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} onClick={() => nav(`/admin/change-requests/${r.id}`)} style={{ borderBottom: "1px solid #F0F1F2", cursor: "pointer" }}>
+                <tr key={r.id} onClick={() => nav(`/admin/change-requests/${r.id}`)} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)", cursor: "pointer" }}>
                   <td style={{ ...td, fontFamily: "var(--font-mono)", color: "var(--fg-2)" }}>{r.code}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{r.vendorName}</td>
                   <td style={td}>{r.section}</td>

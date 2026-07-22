@@ -25,12 +25,12 @@ export function AdminConsole() {
   ];
   const tiles = [
     { title: "ERP integration", desc: "Endpoints, auth, and field mapping", icon: ICON.plug, to: "/admin/erp", bg: "var(--bg-accent-soft)", fg: "var(--color-teal-700)" },
-    { title: "Link requests", desc: "Approve vendors linking to records", icon: ICON.link, to: "/admin/link-requests", bg: "#FDECDD", fg: "var(--color-orange)", badge: s.pendingLinks },
-    { title: "Change requests", desc: "Review edits before ERP sync", icon: ICON.changes, to: "/admin/change-requests", bg: "#FFF4CC", fg: "#8A6D00", badge: s.pendingChanges },
-    { title: "Vendors", desc: "All linked supplier records", icon: ICON.contacts, to: "/admin/vendors", bg: "#EEF3FA", fg: "var(--color-navy)" },
-    { title: "Document types", desc: "Configure upload document types", icon: ICON.changes, to: "/admin/document-types", bg: "#FFF4CC", fg: "#8A6D00" },
+    { title: "Link requests", desc: "Approve vendors linking to records", icon: ICON.link, to: "/admin/link-requests", bg: "#fdf6f3", fg: "var(--color-orange)", badge: s.pendingLinks },
+    { title: "Change requests", desc: "Review edits before ERP sync", icon: ICON.changes, to: "/admin/change-requests", bg: "#fef7b2", fg: "#817400", badge: s.pendingChanges },
+    { title: "Vendors", desc: "All linked supplier records", icon: ICON.contacts, to: "/admin/vendors", bg: "var(--colorBrandBackground2)", fg: "var(--color-navy)" },
+    { title: "Document types", desc: "Configure upload document types", icon: ICON.changes, to: "/admin/document-types", bg: "#fef7b2", fg: "#817400" },
     { title: "Reports", desc: "Activity, sync health, exports", icon: ICON.report, to: "/admin", bg: "var(--bg-accent-soft)", fg: "var(--color-teal-700)" },
-    { title: "Settings", desc: "Roles, notifications, branding", icon: ICON.settings, to: "/admin", bg: "#EEF3FA", fg: "var(--color-navy)" },
+    { title: "Settings", desc: "Roles, notifications, branding", icon: ICON.settings, to: "/admin", bg: "var(--colorBrandBackground2)", fg: "var(--color-navy)" },
   ];
 
   return (

@@ -47,7 +47,7 @@ export function AdminChangeDetail() {
           </div>
           {isDoc && (
             <div style={{ padding: "14px 22px", borderBottom: "1px solid var(--border-1)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-2)" }}>
-              <span style={{ fontSize: 13, color: "var(--fg-2)" }}>📄 {cr.documentName ?? "Uploaded document"}</span>
+              <span style={{ fontSize: 13, color: "var(--fg-2)" }}>{cr.documentName ?? "Uploaded document"}</span>
               <Button variant="outline" style={{ padding: "7px 14px", fontSize: 13 }} onClick={() => setPreviewOpen(true)}>Preview PDF</Button>
             </div>
           )}
@@ -57,10 +57,10 @@ export function AdminChangeDetail() {
             </tr></thead>
             <tbody>
               {cr.diffs.map((d) => (
-                <tr key={d.field} style={{ borderBottom: "1px solid #F0F1F2" }}>
+                <tr key={d.field} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
                   <td style={{ ...td, fontWeight: 600 }}>{d.field}</td>
                   <td style={{ ...td, color: "var(--fg-2)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>{d.fromValue}</td>
-                  <td style={{ ...td, fontFamily: "var(--font-mono)" }}><span style={{ background: "#DFF3E8", color: "#19663F", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>{d.toValue}</span></td>
+                  <td style={{ ...td, fontFamily: "var(--font-mono)" }}><span style={{ background: "var(--colorStatusSuccessBackground1)", color: "var(--colorStatusSuccessForeground1)", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>{d.toValue}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -113,14 +113,14 @@ function PdfSidesheet({ documentId, name, onClose }: { documentId: string; name:
   }, [documentId]);
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(12,47,80,.35)", zIndex: 50 }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 50 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, right: 0, height: "100%", width: "min(680px, 92vw)", background: "#fff", boxShadow: "-8px 0 30px rgba(0,0,0,.18)", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>{name}</div>
           <button onClick={onClose} style={{ border: "none", background: "transparent", fontSize: 22, lineHeight: 1, cursor: "pointer", color: "var(--fg-2)" }}>×</button>
         </div>
         <div style={{ flex: 1, background: "var(--bg-2)" }}>
-          {error ? <div style={{ padding: 24, color: "var(--color-danger, #b3261e)", fontSize: 14 }}>Couldn’t load preview: {error}</div>
+          {error ? <div style={{ padding: 24, color: "var(--color-danger, var(--colorStatusDangerForeground1))", fontSize: 14 }}>Couldn’t load preview: {error}</div>
             : url ? <iframe title={name} src={url} style={{ width: "100%", height: "100%", border: "none" }} />
             : <div style={{ padding: 24, color: "var(--fg-2)", fontSize: 14 }}>Loading preview…</div>}
         </div>

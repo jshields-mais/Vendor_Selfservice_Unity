@@ -15,7 +15,7 @@ export function AdminVendors() {
             </tr></thead>
             <tbody>
               {rows.map((v) => (
-                <tr key={v.number} style={{ borderBottom: "1px solid #F0F1F2" }}>
+                <tr key={v.number} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
                   <td style={{ ...td, fontFamily: "var(--font-mono)", color: "var(--fg-2)" }}>{v.number}</td>
                   <td style={{ ...td, fontWeight: 600 }}>{v.name}</td>
                   <td style={td}>{v.category}</td>

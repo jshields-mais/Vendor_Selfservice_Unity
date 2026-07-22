@@ -8,7 +8,7 @@ export function LinkSuccess() {
   const { data: me } = useMe();
   return (
     <AuthLayout>
-      <div style={{ width: 56, height: 56, borderRadius: 12, background: "#DFF3E8", display: "flex", alignItems: "center", justifyContent: "center", color: "#19663F", marginBottom: 22 }}>
+      <div style={{ width: 56, height: 56, borderRadius: 12, background: "var(--colorStatusSuccessBackground1)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--colorStatusSuccessForeground1)", marginBottom: 22 }}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
       </div>
       <h2 style={{ fontSize: 26, margin: 0 }}>Account linked</h2>

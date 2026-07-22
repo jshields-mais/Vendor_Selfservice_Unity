@@ -67,7 +67,7 @@ export function AdminErp() {
 
               <div style={{ gridColumn: "span 2" }}>
                 <Label>Secret ({isBc ? "client secret" : "password"})</Label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 6, background: "var(--bg-2)", fontSize: 13, color: form.secretConfigured ? "#19663F" : "#8A6D00" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 6, background: "var(--bg-2)", fontSize: 13, color: form.secretConfigured ? "var(--colorStatusSuccessForeground1)" : "#817400" }}>
                   <span style={{ width: 8, height: 8, borderRadius: 999, background: "currentColor" }} />
                   {form.secretConfigured ? "Configured via secret store" : "Not configured — set via user-secrets / env"}
                 </div>
@@ -82,7 +82,7 @@ export function AdminErp() {
               </tr></thead>
               <tbody>
                 {FIELD_MAP.map((m) => (
-                  <tr key={m.vss} style={{ borderBottom: "1px solid #F0F1F2" }}>
+                  <tr key={m.vss} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
                     <td style={{ ...td, fontFamily: "var(--font-mono)" }}>{m.vss}</td>
                     <td style={{ ...td, fontFamily: "var(--font-mono)" }}>{m.erp}</td>
                     <td style={{ ...td, color: "var(--fg-2)" }}>{m.dir}</td>
@@ -105,7 +105,7 @@ export function AdminErp() {
               {test.isPending ? "Testing…" : "Test connection"}
             </Button>
             {result && (
-              <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: result.ok ? "#DFF3E8" : "#FBE3E1", color: result.ok ? "#19663F" : "#8A231E" }}>
+              <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, background: result.ok ? "var(--colorStatusSuccessBackground1)" : "var(--colorStatusDangerBackground1)", color: result.ok ? "var(--colorStatusSuccessForeground1)" : "var(--colorStatusDangerForeground1)" }}>
                 {result.provider} · {result.ok ? "OK" : "Failed"} · {result.latencyMs}ms
                 <div style={{ fontWeight: 400, marginTop: 2 }}>{result.message}</div>
               </div>
@@ -113,8 +113,8 @@ export function AdminErp() {
             <Button variant="teal" style={{ width: "100%", marginTop: 10 }} disabled={isStub || save.isPending} onClick={onSave}>
               {save.isPending ? "Saving…" : "Save configuration"}
             </Button>
-            {save.isSuccess && <div style={{ marginTop: 8, fontSize: 12, color: "#19663F", textAlign: "center" }}>Saved — applied on the next ERP call.</div>}
-            {save.isError && <div style={{ marginTop: 8, fontSize: 12, color: "#8A231E", textAlign: "center" }}>{(save.error as Error).message}</div>}
+            {save.isSuccess && <div style={{ marginTop: 8, fontSize: 12, color: "var(--colorStatusSuccessForeground1)", textAlign: "center" }}>Saved — applied on the next ERP call.</div>}
+            {save.isError && <div style={{ marginTop: 8, fontSize: 12, color: "var(--colorStatusDangerForeground1)", textAlign: "center" }}>{(save.error as Error).message}</div>}
           </Card>
         </div>
       </div>

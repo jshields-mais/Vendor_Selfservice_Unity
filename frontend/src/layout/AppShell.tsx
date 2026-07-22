@@ -64,10 +64,10 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
     loc.pathname === to || (to !== "/admin" && to !== "/console" && loc.pathname.startsWith(to));
 
   const conn = isAdmin
-    ? { bg: "#DFF3E8", fg: "#19663F", label: "ERP connected" }
+    ? { bg: "var(--colorStatusSuccessBackground1)", fg: "var(--colorStatusSuccessForeground1)", label: "ERP connected" }
     : me?.linkState === "Linked"
       ? { bg: "var(--bg-accent-soft)", fg: "var(--color-teal-700)", label: `Linked · ${me?.vendorNumber}` }
-      : { bg: "#FFF4CC", fg: "#8A6D00", label: "Not linked" };
+      : { bg: "#fef7b2", fg: "#817400", label: "Not linked" };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -77,7 +77,7 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
           <div style={{ width: 34, height: 34, borderRadius: 6, background: "var(--color-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>V</div>
           <div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Univerus VSS</div>
-            <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#7AC8CC" }}>{isAdmin ? "Administration" : "Vendor portal"}</div>
+            <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--colorBrandStroke2)" }}>{isAdmin ? "Administration" : "Vendor portal"}</div>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
               <button key={item.to} onClick={() => nav(item.to)} style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "10px 13px",
                 border: "none", borderLeft: active ? "3px solid var(--color-teal)" : "3px solid transparent",
-                borderRadius: 4, cursor: "pointer", background: active ? "rgba(52,167,173,.18)" : "transparent",
+                borderRadius: 4, cursor: "pointer", background: active ? "rgba(255,255,255,.10)" : "transparent",
                 color: active ? "#fff" : "rgba(255,255,255,.72)", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: active ? 600 : 500, textAlign: "left",
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[item.icon]} /></svg>

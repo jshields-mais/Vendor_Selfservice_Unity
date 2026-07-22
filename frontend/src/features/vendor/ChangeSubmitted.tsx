@@ -11,7 +11,7 @@ export function ChangeSubmitted() {
   return (
     <AppShell title="Change submitted" crumb="Vendor Portal">
       <div style={{ maxWidth: 560, margin: "40px auto", background: "#fff", border: "1px solid var(--border-1)", borderRadius: 12, padding: 40, textAlign: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: 14, background: "#DFF3E8", color: "#19663F", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+        <div style={{ width: 60, height: 60, borderRadius: 14, background: "var(--colorStatusSuccessBackground1)", color: "var(--colorStatusSuccessForeground1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
         <h2 style={{ fontSize: 24, margin: 0 }}>Changes submitted for review</h2>
@@ -19,7 +19,7 @@ export function ChangeSubmitted() {
           Your updates to <b style={{ color: "var(--fg-1)" }}>{latest?.section ?? "your record"}</b> were sent to City of Bozeman staff. Once approved, they'll sync to the ERP vendor master. You'll get an email when the review is complete.
         </p>
         {latest && (
-          <div style={{ display: "inline-flex", gap: 8, marginTop: 20, padding: "8px 16px", borderRadius: 999, background: "#FFF4CC", color: "#8A6D00", fontSize: 13, fontWeight: 600 }}>
+          <div style={{ display: "inline-flex", gap: 8, marginTop: 20, padding: "8px 16px", borderRadius: 999, background: "#fef7b2", color: "#817400", fontSize: 13, fontWeight: 600 }}>
             Change request #{latest.code} · {latest.status}
           </div>
         )}

@@ -258,7 +258,7 @@ function DocumentsPanel({ vendor }: { vendor: Vendor }) {
         </tr></thead>
         <tbody>
           {vendor.documents.map((d) => (
-            <tr key={d.id} style={{ borderBottom: "1px solid #F0F1F2" }}>
+            <tr key={d.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
               <td style={{ padding: "14px 24px", fontSize: 14, fontWeight: 600 }}>{d.name}</td>
               <td style={{ padding: "14px 24px", fontSize: 14, color: "var(--fg-2)" }}>{d.fileRef ?? "—"}</td>
               <td style={{ padding: "14px 24px", fontSize: 14, color: "var(--fg-2)" }}>{d.validity}</td>

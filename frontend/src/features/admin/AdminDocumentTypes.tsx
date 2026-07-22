@@ -39,7 +39,7 @@ export function AdminDocumentTypes() {
         These drive the document-type dropdown vendors choose from when uploading. Inactive
         types are hidden from vendors but kept for existing documents.
       </p>
-      {error && <Card style={{ padding: "10px 14px", marginBottom: 12, color: "#b3261e", fontSize: 13 }}>{error}</Card>}
+      {error && <Card style={{ padding: "10px 14px", marginBottom: 12, color: "var(--colorStatusDangerForeground1)", fontSize: 13 }}>{error}</Card>}
 
       <Card>
         {/* Add new */}
@@ -75,7 +75,7 @@ function Row({ type, onSave, onDelete, busy }: { type: DocumentType; onSave: (b:
   const dirty = desc !== type.description || order !== type.sortOrder || active !== type.isActive;
 
   return (
-    <tr style={{ borderBottom: "1px solid #F0F1F2", opacity: type.isActive ? 1 : 0.55 }}>
+    <tr style={{ borderBottom: "1px solid var(--colorNeutralStroke3)", opacity: type.isActive ? 1 : 0.55 }}>
       <td style={{ ...td, fontFamily: "var(--font-mono)", fontWeight: 600 }}>{type.code}</td>
       <td style={td}><input style={inputStyle} value={desc} onChange={(e) => setDesc(e.target.value)} /></td>
       <td style={{ ...td, width: 90 }}><input style={inputStyle} type="number" value={order} onChange={(e) => setOrder(Number(e.target.value))} /></td>

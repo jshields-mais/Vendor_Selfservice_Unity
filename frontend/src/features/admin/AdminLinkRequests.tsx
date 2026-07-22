@@ -29,7 +29,7 @@ export function AdminLinkRequests() {
               {rows.map((r) => {
                 const pending = r.status === "Pending" || r.status === "Matched";
                 return (
-                  <tr key={r.id} style={{ borderBottom: "1px solid #F0F1F2" }}>
+                  <tr key={r.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
                     <td style={{ ...td, fontWeight: 600 }}>{r.company}<div style={{ fontSize: 12, color: "var(--fg-3)", fontWeight: 400 }}>{r.email}</div></td>
                     <td style={td}>{r.method}</td>
                     <td style={{ ...td, fontFamily: "var(--font-mono)" }}>{r.matchedVendorNumber ?? "—"}</td>
