@@ -21,7 +21,6 @@ const ICONS: Record<string, string> = {
 
 interface NavItem { label: string; icon: keyof typeof ICONS; to: string; badge?: number; }
 
-// Vendor-facing menu: the profile sections now live in the side sheet itself.
 const VENDOR_NAV: NavItem[] = [
   { label: "Home", icon: "home", to: "/console" },
   { label: "Company profile", icon: "company", to: "/profile/company" },
@@ -46,7 +45,7 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
 
   const { data: stats } = useApiQuery<AdminStats>(VSS_BASE, "api/v1/admin/stats", undefined, { enabled: isAdmin });
 
-  // Collapsible side sheet — toggled from the header; when off it auto-hides. Persisted.
+  // Inner-menu is collapsible from the app-bar hamburger; when off the grid collapses to 0.
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("vss.nav.collapsed") === "1");
   const toggleNav = () => setCollapsed((c) => { const n = !c; localStorage.setItem("vss.nav.collapsed", n ? "1" : "0"); return n; });
 
@@ -66,81 +65,82 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
   const conn = isAdmin
     ? { bg: "var(--colorStatusSuccessBackground1)", fg: "var(--colorStatusSuccessForeground1)", label: "ERP connected" }
     : me?.linkState === "Linked"
-      ? { bg: "var(--bg-accent-soft)", fg: "var(--color-teal-700)", label: `Linked · ${me?.vendorNumber}` }
-      : { bg: "#fef7b2", fg: "#817400", label: "Not linked" };
+      ? { bg: "var(--colorBrandBackground2)", fg: "var(--colorBrandForeground2)", label: `Linked · ${me?.vendorNumber}` }
+      : { bg: "var(--colorStatusWarningBackground1)", fg: "var(--colorStatusWarningForeground1)", label: "Not linked" };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      {!collapsed && (
-      <aside style={{ width: 236, flex: "0 0 236px", background: "var(--color-navy)", color: "#fff", display: "flex", flexDirection: "column", padding: "20px 0" }}>
-        <div style={{ padding: "0 20px 22px", display: "flex", alignItems: "center", gap: 11, borderBottom: "1px solid rgba(255,255,255,.09)" }}>
-          <div style={{ width: 34, height: 34, borderRadius: 6, background: "var(--color-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>V</div>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Univerus VSS</div>
-            <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--colorBrandStroke2)" }}>{isAdmin ? "Administration" : "Vendor portal"}</div>
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      {/* ---- Top app bar (navy chrome): waffle + product + breadcrumb + status + user ---- */}
+      <header style={{ flex: "0 0 48px", height: 48, background: "var(--colorAppHeader)", color: "var(--colorAppHeaderForeground)", display: "flex", alignItems: "center", padding: "0 12px", gap: 12 }}>
+        <button onClick={toggleNav} title={collapsed ? "Show menu" : "Hide menu"} aria-label={collapsed ? "Show menu" : "Hide menu"}
+          style={{ display: "flex", padding: 8, border: "none", background: "transparent", borderRadius: 4, cursor: "pointer", color: "#fff" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+        </button>
+        {/* App-switcher waffle (9 dots) — text-only header per the design standard, no logo image. */}
+        <div title="Univerus apps" style={{ display: "grid", gridTemplateColumns: "repeat(3,4px)", gridTemplateRows: "repeat(3,4px)", gap: 3, padding: 8, borderRadius: 4, cursor: "pointer" }}>
+          {Array.from({ length: 9 }).map((_, i) => <span key={i} style={{ width: 4, height: 4, background: "#fff", borderRadius: "50%" }} />)}
         </div>
+        <span style={{ font: "600 16px/22px var(--font-sans)" }}>Univerus VSS</span>
+        <span style={{ color: "rgba(255,255,255,.7)", font: "400 13px/18px var(--font-sans)", display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span style={{ opacity: .5 }}>/</span>
+          <span style={{ color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{crumb}</span>
+        </span>
+        <span style={{ flex: 1 }} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 10px", borderRadius: 999, background: conn.bg, color: conn.fg, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: "currentColor" }} />
+          {conn.label}
+        </span>
+        <span title={account?.name} style={{ width: 28, height: 28, borderRadius: "50%", background: "#5b8bc0", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", font: "600 12px/16px var(--font-sans)" }}>
+          {initials(account?.name ?? "?")}
+        </span>
+      </header>
 
-        <nav style={{ padding: "16px 12px", flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-          {items.map((item) => {
-            const active = isActive(item.to);
-            return (
-              <button key={item.to} onClick={() => nav(item.to)} style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "10px 13px",
-                border: "none", borderLeft: active ? "3px solid var(--color-teal)" : "3px solid transparent",
-                borderRadius: 4, cursor: "pointer", background: active ? "rgba(255,255,255,.10)" : "transparent",
-                color: active ? "#fff" : "rgba(255,255,255,.72)", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: active ? 600 : 500, textAlign: "left",
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[item.icon]} /></svg>
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {!!item.badge && (
-                  <span style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: "var(--color-orange)", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{item.badge}</span>
-                )}
+      {/* ---- Body: light inner-menu (224px) + content ---- */}
+      <div style={{ display: "grid", gridTemplateColumns: collapsed ? "0 1fr" : "224px 1fr", flex: 1, minHeight: 0 }}>
+        <nav style={{ background: "var(--colorNeutralBackground1)", borderRight: "1px solid var(--colorNeutralStroke2)", display: collapsed ? "none" : "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ padding: "8px 0", flex: 1, overflowY: "auto" }}>
+            {items.map((item) => {
+              const active = isActive(item.to);
+              return (
+                <button key={item.to} onClick={() => nav(item.to)} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "8px 16px", width: "100%", textAlign: "left",
+                  border: "none", borderLeft: `2px solid ${active ? "var(--colorBrandStroke1)" : "transparent"}`,
+                  cursor: "pointer", background: active ? "var(--colorBrandBackground2)" : "transparent",
+                  color: active ? "var(--colorBrandForeground2)" : "var(--colorNeutralForeground1)",
+                  font: `${active ? 600 : 400} 14px/20px var(--font-sans)`,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[item.icon]} /></svg>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {!!item.badge && (
+                    <span style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "var(--colorBrandBackground)", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{item.badge}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* footer: identity + demo role toggle + sign out */}
+          <div style={{ borderTop: "1px solid var(--colorNeutralStroke2)", padding: 12 }}>
+            <div style={{ lineHeight: 1.3, marginBottom: mode === "dev" ? 8 : 4 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--colorNeutralForeground1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{account?.name}</div>
+              <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isAdmin ? "City of Bozeman" : me?.vendorName ?? ""}</div>
+            </div>
+            {mode === "dev" && (
+              <button onClick={() => { setRole(isAdmin ? "vendor" : "admin"); nav("/"); }} style={{ width: "100%", padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-md)", background: "var(--colorNeutralBackground1)", color: "var(--colorNeutralForeground2)", font: "600 12px/16px var(--font-sans)", cursor: "pointer" }}>
+                {isAdmin ? "Demo: view as vendor" : "Demo: view as City staff"}
               </button>
-            );
-          })}
+            )}
+            <button onClick={() => { logout(); nav("/login"); }} style={{ width: "100%", marginTop: 6, padding: "7px 10px", border: "none", borderRadius: "var(--radius-md)", background: "transparent", color: "var(--colorNeutralForeground3)", font: "400 12px/16px var(--font-sans)", cursor: "pointer" }}>Sign out</button>
+          </div>
         </nav>
 
-        <div style={{ padding: "0 14px" }}>
-          <div style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(255,255,255,.06)", display: "flex", alignItems: "center", gap: 11 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 999, background: "var(--color-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12 }}>{initials(account?.name ?? "?")}</div>
-            <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{account?.name}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isAdmin ? "City of Bozeman" : me?.vendorName ?? "Northstar Supply Co."}</div>
-            </div>
+        {/* content column */}
+        <div style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+          <div style={{ padding: "16px 24px", background: "var(--colorNeutralBackground1)", borderBottom: "1px solid var(--colorNeutralStroke2)" }}>
+            <h1 style={{ font: "600 28px/36px var(--font-display)", color: "var(--colorNeutralForeground1)" }}>{title}</h1>
           </div>
-          {mode === "dev" && (
-            <button onClick={() => { setRole(isAdmin ? "vendor" : "admin"); nav("/"); }} style={{ width: "100%", marginTop: 8, padding: 9, border: "1px solid rgba(255,255,255,.16)", borderRadius: 6, background: "transparent", color: "rgba(255,255,255,.8)", fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              {isAdmin ? "Demo: view as vendor" : "Demo: view as City staff"}
-            </button>
-          )}
-          <button onClick={() => { logout(); nav("/login"); }} style={{ width: "100%", marginTop: 8, padding: 9, border: "none", borderRadius: 6, background: "transparent", color: "rgba(255,255,255,.55)", fontFamily: "var(--font-sans)", fontSize: 12, cursor: "pointer" }}>Sign out</button>
+          <main style={{ flex: 1, overflow: "auto", padding: 24, background: "var(--colorNeutralBackground2)" }}>{children}</main>
         </div>
-      </aside>
-      )}
-
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <header style={{ height: 62, flex: "0 0 62px", background: "#fff", borderBottom: "1px solid var(--border-1)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <button
-              onClick={toggleNav}
-              title={collapsed ? "Show menu" : "Hide menu"}
-              aria-label={collapsed ? "Show menu" : "Hide menu"}
-              style={{ flex: "0 0 auto", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-1)", borderRadius: 8, background: "#fff", cursor: "pointer", color: "var(--fg-1)" }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-            </button>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--fg-3)", letterSpacing: ".06em" }}>{crumb}</div>
-              <h1 style={{ fontSize: 19, lineHeight: 1.1 }}>{title}</h1>
-            </div>
-          </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", borderRadius: 999, background: conn.bg, color: conn.fg, fontSize: 12, fontWeight: 600 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: "currentColor" }} />
-            {conn.label}
-          </div>
-        </header>
-        <main style={{ flex: 1, overflow: "auto", padding: 28 }}>{children}</main>
       </div>
     </div>
   );
