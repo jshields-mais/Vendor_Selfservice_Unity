@@ -29,14 +29,14 @@ export function VendorConsole() {
 
   return (
     <AppShell title="My dashboard" crumb="Vendor Portal">
-      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", borderRadius: 10, background: "var(--colorAppHeader)", color: "#fff", marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", borderRadius: "var(--radius-md)", background: "var(--colorNeutralBackground1)", border: "1px solid var(--colorNeutralStroke2)", marginBottom: 22 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 20 }}>Welcome back, {me.vendorName ?? me.user.displayName}</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.82)", marginTop: 3 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 20, color: "var(--colorNeutralForeground1)" }}>Welcome back, {me.vendorName ?? me.user.displayName}</div>
+          <div style={{ fontSize: 13, color: "var(--colorNeutralForeground3)", marginTop: 3 }}>
             Vendor #{me.vendorNumber} · Linked to City of Bozeman ERP · Profile {me.profileCompletePct}% complete
           </div>
         </div>
-        <Button variant="teal" onClick={() => nav("/profile/company")}>Edit my record</Button>
+        <Button variant="primary" onClick={() => nav("/profile/company")}>Edit my record</Button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 22 }}>
