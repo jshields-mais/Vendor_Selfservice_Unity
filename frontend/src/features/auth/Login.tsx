@@ -18,8 +18,7 @@ export function Login() {
     flex: 1, padding: "9px 8px", border: "none", borderRadius: 6, cursor: "pointer",
     fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
     background: active ? "#fff" : "transparent", color: active ? "var(--color-navy)" : "var(--fg-2)",
-    boxShadow: active ? "var(--shadow-1)" : "none",
-  });
+    boxShadow: active ? "var(--shadow-1)" : "none" });
 
   return (
     <AuthLayout>

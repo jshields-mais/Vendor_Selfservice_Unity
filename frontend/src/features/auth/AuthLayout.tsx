@@ -15,11 +15,11 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           <div style={{ width: 40, height: 40, borderRadius: 6, background: "var(--color-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 20 }}>V</div>
           <div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>Univerus VSS</div>
-            <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--colorBrandStroke2)" }}>Vendor Self Service</div>
+            <div style={{ fontSize: 11, color: "var(--colorBrandStroke2)" }}>Vendor Self Service</div>
           </div>
         </div>
         <div style={{ position: "relative", marginTop: "auto" }}>
-          <div style={{ fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--colorBrandStroke2)", fontWeight: 600 }}>City of Bozeman · Supplier Portal</div>
+          <div style={{ fontSize: 12, color: "var(--colorBrandStroke2)", fontWeight: 600 }}>City of Bozeman · Supplier Portal</div>
           <h1 style={{ fontSize: 40, lineHeight: 1.1, margin: "16px 0 0", color: "#fff", maxWidth: "15ch" }}>Manage your vendor record in one place.</h1>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "rgba(255,255,255,.82)", maxWidth: "42ch", margin: "18px 0 0" }}>
             Update your company details, banking, tax forms and compliance documents, and submit changes straight to the City's ERP for review.

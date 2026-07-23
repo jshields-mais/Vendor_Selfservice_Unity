@@ -4,8 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Button, Card, Label, TextField, SelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, changeRequests, documents, qk, type Vendor, type ChangeDiff,
-} from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "readonly";
 interface FieldDef {
@@ -21,8 +20,7 @@ const META: Record<string, { title: string; hint: string; section: string }> = {
   banking: { title: "Banking & remittance", hint: "EFT details. Changes always require City approval.", section: "Banking & remittance" },
   tax: { title: "Tax & W-9", hint: "Tax identification and classification on file.", section: "Tax & W-9" },
   documents: { title: "Documents & compliance", hint: "Upload and keep required documents current.", section: "Documents" },
-  categories: { title: "Category codes", hint: "Commodity and NIGP codes you supply against.", section: "Category codes" },
-};
+  categories: { title: "Category codes", hint: "Commodity and NIGP codes you supply against.", section: "Category codes" } };
 
 const t = (key: string, label: string, value?: string | null, full = false): FieldDef => ({ key, label, value: value ?? "", kind: "text", full });
 const sel = (key: string, label: string, value: string | null | undefined, options: string[]): FieldDef => ({ key, label, value: value ?? "", kind: "select", options });
@@ -146,8 +144,7 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
 
   const submit = useMutation({
     mutationFn: () => changeRequests.create({ section, diffs }),
-    onSuccess: onSubmitted,
-  });
+    onSuccess: onSubmitted });
 
   return (
     <>
@@ -213,8 +210,7 @@ function DocumentsPanel({ vendor }: { vendor: Vendor }) {
         qc.invalidateQueries({ queryKey: qk.vendor }),
       ]);
     },
-    onSettled: () => setPending(null),
-  });
+    onSettled: () => setPending(null) });
 
   const pick = (code: string) => {
     const input = document.createElement("input");
@@ -254,7 +250,7 @@ function DocumentsPanel({ vendor }: { vendor: Vendor }) {
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead><tr style={{ background: "var(--bg-2)" }}>
-          {cols.map((c) => <th key={c} style={{ padding: "10px 24px", textAlign: "left", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" }}>{c}</th>)}
+          {cols.map((c) => <th key={c} style={{ padding: "10px 24px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" }}>{c}</th>)}
         </tr></thead>
         <tbody>
           {vendor.documents.map((d) => (

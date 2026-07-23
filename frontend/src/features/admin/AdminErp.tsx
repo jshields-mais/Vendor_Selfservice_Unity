@@ -24,8 +24,7 @@ export function AdminErp() {
   const test = useMutation({ mutationFn: () => adminApi.testErp(), onSuccess: setResult });
   const save = useMutation({
     mutationFn: (body: ErpConfigUpdate) => adminApi.saveErpConfig(body),
-    onSuccess: (updated) => { setForm(updated); qc.invalidateQueries({ queryKey: adminQk.erpConfig }); },
-  });
+    onSuccess: (updated) => { setForm(updated); qc.invalidateQueries({ queryKey: adminQk.erpConfig }); } });
 
   if (isLoading || !form) return <AppShell title="ERP integration" crumb="Administration"><Spinner /></AppShell>;
 
@@ -35,8 +34,7 @@ export function AdminErp() {
   const set = (k: keyof ErpConfig) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
   const onSave = () => save.mutate({
     baseUrl: form.baseUrl, principalId: form.principalId, querySupplierPath: form.querySupplierPath,
-    manageSupplierPath: form.manageSupplierPath, sampleId: form.sampleId, tenantId: form.tenantId, scope: form.scope, companyId: form.companyId,
-  });
+    manageSupplierPath: form.manageSupplierPath, sampleId: form.sampleId, tenantId: form.tenantId, scope: form.scope, companyId: form.companyId });
 
   return (
     <AppShell title="ERP integration" crumb="Administration">
@@ -122,5 +120,5 @@ export function AdminErp() {
   );
 }
 
-const th = { padding: "10px 22px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: ".1em", color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
+const th = { padding: "10px 22px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
 const td = { padding: "12px 22px", fontSize: 13, color: "var(--fg-1)" };

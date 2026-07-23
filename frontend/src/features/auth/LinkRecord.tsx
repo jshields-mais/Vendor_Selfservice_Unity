@@ -30,8 +30,7 @@ export function LinkRecord() {
       if (res.matched) { setMatch(res); setError(null); }
       else setError("We couldn't find a matching vendor record. Check your details and try again.");
     },
-    onError: (e) => setError(e.message),
-  });
+    onError: (e) => setError(e.message) });
 
   const confirm = useMutation({
     mutationFn: () => linkRequests.confirm(match!.linkRequestId!),
@@ -40,15 +39,13 @@ export function LinkRecord() {
       await qc.invalidateQueries({ queryKey: qk.vendor });
       nav("/link/success");
     },
-    onError: (e) => setError(e.message),
-  });
+    onError: (e) => setError(e.message) });
 
   const tabStyle = (active: boolean) => ({
     flex: 1, padding: "9px 8px", border: "none", borderRadius: 6, cursor: "pointer",
     fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600,
     background: active ? "#fff" : "transparent", color: active ? "var(--color-navy)" : "var(--fg-2)",
-    boxShadow: active ? "var(--shadow-1)" : "none",
-  });
+    boxShadow: active ? "var(--shadow-1)" : "none" });
 
   return (
     <AuthLayout>
@@ -117,7 +114,7 @@ export function LinkRecord() {
 function Meta({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <div style={{ color: "var(--fg-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</div>
+      <div style={{ color: "var(--fg-3)", fontSize: 11 }}>{label}</div>
       <div style={{ color: "var(--fg-1)", fontWeight: 600, marginTop: 2 }}>{value ?? "—"}</div>
     </div>
   );

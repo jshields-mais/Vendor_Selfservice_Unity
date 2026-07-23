@@ -42,14 +42,14 @@ export function VendorConsole() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 22 }}>
         {stats.map((s) => (
           <div key={s.label} style={{ background: "#fff", border: "1px solid var(--border-1)", borderRadius: 8, padding: 18 }}>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--fg-2)", fontWeight: 600 }}>{s.label}</div>
+            <div style={{ fontSize: 11, color: "var(--fg-2)", fontWeight: 600 }}>{s.label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 28, marginTop: 6 }}>{s.value}</div>
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>{s.note}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--fg-2)", marginBottom: 12 }}>Manage your record</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--fg-2)", marginBottom: 12 }}>Manage your record</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
         {TILES.map((t) => (
           <button key={t.tab} onClick={() => nav(`/profile/${t.tab}`)} style={{ textAlign: "left", background: "#fff", border: "1px solid var(--border-1)", borderRadius: 10, padding: 20, cursor: "pointer" }}>

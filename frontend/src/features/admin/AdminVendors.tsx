@@ -31,5 +31,5 @@ export function AdminVendors() {
   );
 }
 
-const th = { padding: "11px 22px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: ".1em", color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
+const th = { padding: "11px 22px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
 const td = { padding: "14px 22px", fontSize: 13, color: "var(--fg-1)" };

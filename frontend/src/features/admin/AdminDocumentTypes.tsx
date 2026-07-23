@@ -18,18 +18,15 @@ export function AdminDocumentTypes() {
   const create = useMutation({
     mutationFn: () => adminApi.createDocType({ ...draft, code: draft.code.trim(), description: draft.description.trim() }),
     onSuccess: () => { setDraft({ code: "", description: "", isActive: true, sortOrder: 0 }); setError(null); invalidate(); },
-    onError: (e: Error) => setError(e.message),
-  });
+    onError: (e: Error) => setError(e.message) });
   const update = useMutation({
     mutationFn: ({ id, body }: { id: string; body: DocumentTypeUpsert }) => adminApi.updateDocType(id, body),
     onSuccess: invalidate,
-    onError: (e: Error) => setError(e.message),
-  });
+    onError: (e: Error) => setError(e.message) });
   const remove = useMutation({
     mutationFn: (id: string) => adminApi.deleteDocType(id),
     onSuccess: invalidate,
-    onError: (e: Error) => setError(e.message),
-  });
+    onError: (e: Error) => setError(e.message) });
 
   if (isLoading || !types) return <AppShell title="Document types" crumb="Administration"><Spinner /></AppShell>;
 
@@ -89,8 +86,8 @@ function Row({ type, onSave, onDelete, busy }: { type: DocumentType; onSave: (b:
 }
 
 function Lbl({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--fg-2)", marginBottom: 5 }}>{children}</div>;
+  return <div style={{ fontSize: 11, fontWeight: 600, color: "var(--fg-2)", marginBottom: 5 }}>{children}</div>;
 }
 
-const th = { padding: "10px 20px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: ".1em", color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
+const th = { padding: "10px 20px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" };
 const td = { padding: "12px 20px", fontSize: 13, color: "var(--fg-1)" };

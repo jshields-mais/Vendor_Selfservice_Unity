@@ -9,8 +9,7 @@ const ICON = {
   changes: "M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5",
   contacts: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   report: "M3 3v18h18M7 15l3-4 3 3 5-7",
-  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 5.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
-};
+  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 5.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10a1.65 1.65 0 0 0 1-1.51V4a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" };
 
 export function AdminConsole() {
   const nav = useNavigate();
@@ -38,13 +37,13 @@ export function AdminConsole() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 22 }}>
         {stats.map((x) => (
           <div key={x.label} style={{ background: "#fff", border: "1px solid var(--border-1)", borderRadius: 8, padding: 18 }}>
-            <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--fg-2)", fontWeight: 600 }}>{x.label}</div>
+            <div style={{ fontSize: 11, color: "var(--fg-2)", fontWeight: 600 }}>{x.label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 28, marginTop: 6 }}>{x.value}</div>
             <div style={{ fontSize: 12, color: x.color, marginTop: 2 }}>{x.note}</div>
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--fg-2)", marginBottom: 12 }}>Consoles</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--fg-2)", marginBottom: 12 }}>Consoles</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
         {tiles.map((t) => (
           <button key={t.title} onClick={() => nav(t.to)} style={{ textAlign: "left", background: "#fff", border: "1px solid var(--border-1)", borderRadius: 10, padding: 22, cursor: "pointer", position: "relative" }}>
