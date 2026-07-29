@@ -232,6 +232,11 @@ public class SapByDesignErpClient : IErpClient
     private static DateOnly? ParseSapDate(string? s) =>
         DateOnly.TryParse(s, out var d) ? d : null;
 
+    /// <summary>SAP stores names uppercase (JOE HARDESTY); present them as "Joe Hardesty".</summary>
+    private static string TitleCase(string s) => string.Join(" ",
+        s.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+         .Select(w => w.Length == 1 ? w.ToUpperInvariant() : char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+
     // ---------------------------------------------------------------- http
     private async Task<XDocument> PostAsync(string path, string soapAction, string envelope, CancellationToken ct)
     {
@@ -270,6 +275,18 @@ public class SapByDesignErpClient : IErpClient
             PrimaryEmail = F("EmailURI") ?? F("URI"),
             Tin = F("TaxID") ?? F("PartyTaxID"),
         };
+
+        // Primary contact = the default ContactPerson (GivenName + FamilyName), title-cased.
+        var contacts = supplier.Descendants().Where(e => e.Name.LocalName == "ContactPerson").ToList();
+        var contact = contacts.FirstOrDefault(c => string.Equals(
+                          c.Elements().FirstOrDefault(e => e.Name.LocalName == "DefaultContactPersonIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase))
+                      ?? contacts.FirstOrDefault();
+        if (contact is not null)
+        {
+            string? C(string n) => contact.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
+            var name = string.Join(" ", new[] { C("GivenName"), C("FamilyName") }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            if (!string.IsNullOrWhiteSpace(name)) dto.PrimaryContact = TitleCase(name);
+        }
 
         // PO Box vs street address. SAP flags a PO Box with POBoxIndicator=true and carries
         // the box number/postal code in dedicated fields (no StreetName). Surface the right

@@ -58,6 +58,11 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
             if (!string.IsNullOrEmpty(e.RoutingNumber)) v.RoutingNumber = e.RoutingNumber;
             if (!string.IsNullOrEmpty(e.AccountNumber)) v.AccountNumber = e.AccountNumber;
 
+            // Contact: the supplier's default ContactPerson (name, and email/phone if present).
+            if (!string.IsNullOrEmpty(e.PrimaryContact)) v.PrimaryContact = e.PrimaryContact;
+            if (!string.IsNullOrEmpty(e.PrimaryEmail)) v.PrimaryEmail = e.PrimaryEmail;
+            if (!string.IsNullOrEmpty(e.PrimaryPhone)) v.PrimaryPhone = e.PrimaryPhone;
+
             // Address (PO Box vs street are mutually exclusive in the ERP).
             v.IsPoBox = e.IsPoBox;
             v.PoBox = e.IsPoBox ? e.PoBox : null;
@@ -83,5 +88,6 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
 
     private static string Snapshot(Vendor v) => string.Join('|',
         v.PaymentMethod, v.RoutingNumber, v.AccountNumber,
+        v.PrimaryContact, v.PrimaryEmail, v.PrimaryPhone,
         v.IsPoBox, v.PoBox, v.HouseNumber, v.RemitStreet, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry);
 }
