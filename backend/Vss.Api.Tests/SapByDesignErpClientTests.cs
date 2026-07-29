@@ -133,7 +133,8 @@ public class SapByDesignErpClientTests
         var v = await client.GetVendorAsync("62440");
 
         Assert.NotNull(v);
-        Assert.Equal("Joe Hardesty", v!.PrimaryContact); // the default contact, title-cased
+        Assert.Equal("Joe", v!.ContactFirstName);  // default contact, title-cased
+        Assert.Equal("Hardesty", v.ContactLastName);
     }
 
     [Fact]

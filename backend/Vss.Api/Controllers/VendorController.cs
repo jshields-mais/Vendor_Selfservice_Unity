@@ -58,10 +58,15 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
             if (!string.IsNullOrEmpty(e.RoutingNumber)) v.RoutingNumber = e.RoutingNumber;
             if (!string.IsNullOrEmpty(e.AccountNumber)) v.AccountNumber = e.AccountNumber;
 
-            // Contact: the supplier's default ContactPerson (name, and email/phone if present).
-            if (!string.IsNullOrEmpty(e.PrimaryContact)) v.PrimaryContact = e.PrimaryContact;
-            if (!string.IsNullOrEmpty(e.PrimaryEmail)) v.PrimaryEmail = e.PrimaryEmail;
-            if (!string.IsNullOrEmpty(e.PrimaryPhone)) v.PrimaryPhone = e.PrimaryPhone;
+            // Contact: the supplier's default ContactPerson (name, title, dept, email/phone/fax).
+            if (!string.IsNullOrEmpty(e.ContactFirstName)) v.ContactFirstName = e.ContactFirstName;
+            if (!string.IsNullOrEmpty(e.ContactLastName)) v.ContactLastName = e.ContactLastName;
+            if (!string.IsNullOrEmpty(e.ContactTitle)) v.ContactTitle = e.ContactTitle;
+            if (!string.IsNullOrEmpty(e.ContactDepartment)) v.ContactDepartment = e.ContactDepartment;
+            if (!string.IsNullOrEmpty(e.ContactEmail)) v.ContactEmail = e.ContactEmail;
+            if (!string.IsNullOrEmpty(e.ContactPhone)) v.ContactPhone = e.ContactPhone;
+            if (!string.IsNullOrEmpty(e.ContactMobile)) v.ContactMobile = e.ContactMobile;
+            if (!string.IsNullOrEmpty(e.ContactFax)) v.ContactFax = e.ContactFax;
 
             // Address (PO Box vs street are mutually exclusive in the ERP).
             v.IsPoBox = e.IsPoBox;
@@ -88,6 +93,6 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
 
     private static string Snapshot(Vendor v) => string.Join('|',
         v.PaymentMethod, v.RoutingNumber, v.AccountNumber,
-        v.PrimaryContact, v.PrimaryEmail, v.PrimaryPhone,
+        v.ContactFirstName, v.ContactLastName, v.ContactTitle, v.ContactDepartment, v.ContactEmail, v.ContactPhone, v.ContactMobile, v.ContactFax,
         v.IsPoBox, v.PoBox, v.HouseNumber, v.RemitStreet, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry);
 }

@@ -176,6 +176,44 @@ internal static class Sap
             supplier));
     }
 
+    /// <summary>
+    /// Builds a MaintainBundle updating the supplier's default ContactPerson in place. Names
+    /// map to GivenName/FamilyName; title/department/email/fax/phone/mobile to the Workplace*
+    /// fields. Phone+mobile are sent as a complete WorkplaceTelephone list (LCTI).
+    /// </summary>
+    public static string BuildContactPerson(string internalId, SapContact c)
+    {
+        var cp = new XElement("ContactPerson", new XAttribute("actionCode", "04"));
+        void Add(string el, string? val) { if (val is not null) cp.Add(new XElement(el, val)); }
+
+        // schema order: UUID, InternalID, ... GivenName, FamilyName, ... WorkplaceEMailURI,
+        // WorkplaceFacsimile..., WorkplaceTelephone*, WorkplaceFunctionalTitleName, WorkplaceDepartmentName
+        if (!string.IsNullOrEmpty(c.Uuid)) cp.Add(new XElement("BusinessPartnerContactUUID", c.Uuid));
+        if (!string.IsNullOrEmpty(c.InternalId)) cp.Add(new XElement("BusinessPartnerContactInternalID", c.InternalId));
+        Add("GivenName", c.FirstName);
+        Add("FamilyName", c.LastName);
+        Add("WorkplaceEMailURI", c.Email);
+        Add("WorkplaceFacsimileFormattedNumberDescription", c.Fax);
+        if (c.Phone is not null || c.Mobile is not null)
+        {
+            cp.Add(new XAttribute("workplaceTelephoneListCompleteTransmissionIndicator", "true"));
+            if (!string.IsNullOrEmpty(c.Phone))
+                cp.Add(new XElement("WorkplaceTelephone", new XElement("FormattedNumberDescription", c.Phone), new XElement("MobilePhoneNumberIndicator", "false")));
+            if (!string.IsNullOrEmpty(c.Mobile))
+                cp.Add(new XElement("WorkplaceTelephone", new XElement("FormattedNumberDescription", c.Mobile), new XElement("MobilePhoneNumberIndicator", "true")));
+        }
+        Add("WorkplaceFunctionalTitleName", c.Title);
+        Add("WorkplaceDepartmentName", c.Department);
+
+        var supplier = new XElement("Supplier",
+            new XAttribute("actionCode", "04"),
+            new XElement("InternalID", internalId),
+            cp);
+        return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
+            new XElement("BasicMessageHeader"),
+            supplier));
+    }
+
     /// <summary>SAP's high date for an unlimited "valid to" (9999-12-31).</summary>
     public static readonly DateOnly UnlimitedDate = new(9999, 12, 31);
 
@@ -213,6 +251,21 @@ internal static class Sap
                 new XElement(Soap + "Header"),
                 new XElement(Soap + "Body", body)))
             .ToString(SaveOptions.DisableFormatting);
+}
+
+/// <summary>Effective contact values for a ContactPerson update-in-place write.</summary>
+public sealed class SapContact
+{
+    public string? Uuid { get; init; }
+    public string? InternalId { get; init; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
+    public string? Title { get; init; }
+    public string? Department { get; init; }
+    public string? Email { get; init; }
+    public string? Phone { get; init; }
+    public string? Mobile { get; init; }
+    public string? Fax { get; init; }
 }
 
 /// <summary>Identifiers read from the supplier before a write so update-in-place nodes

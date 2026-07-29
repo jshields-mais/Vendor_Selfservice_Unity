@@ -51,15 +51,20 @@ public class Vendor
     public string ExemptPayee { get; set; } = "No";
     public string? W9OnFile { get; set; }
 
-    // ---- Contacts ----
-    public string? PrimaryContact { get; set; }
-    public string? PrimaryTitle { get; set; }
+    // ---- Primary contact (maps to the SAP default ContactPerson) ----
+    public string? ContactFirstName { get; set; }   // required in the UI
+    public string? ContactLastName { get; set; }     // required in the UI
+    public string? ContactTitle { get; set; }        // WorkplaceFunctionalTitleName
+    public string? ContactFunction { get; set; }     // portal-only (SAP function is coded)
+    public string? ContactDepartment { get; set; }   // WorkplaceDepartmentName
+    public string? ContactEmail { get; set; }        // WorkplaceEMailURI
+    public string? ContactPhone { get; set; }         // WorkplaceTelephone (mobile=false)
+    public string? ContactMobile { get; set; }        // WorkplaceTelephone (mobile=true)
+    public string? ContactFax { get; set; }           // WorkplaceFacsimileFormattedNumberDescription
+
+    // Supplier-level address email/phone (kept for the address node; not the contact).
     public string? PrimaryEmail { get; set; }
     public string? PrimaryPhone { get; set; }
-    public string? ApContactName { get; set; }
-    public string? ApEmail { get; set; }
-    public string? SalesContactName { get; set; }
-    public string? SalesEmail { get; set; }
 
     // ---- Category / classification ----
     public List<VendorCategoryCode> CategoryCodes { get; set; } = new();

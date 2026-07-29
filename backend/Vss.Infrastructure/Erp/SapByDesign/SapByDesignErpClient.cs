@@ -48,9 +48,45 @@ public class SapByDesignErpClient : IErpClient
           "AddressType", "PoBox", "PrimaryEmail", "PrimaryPhone" };
     private static readonly string[] BankingFields = { "RoutingNumber", "AccountNumber" };
 
+    private static readonly string[] ContactFields =
+        { "ContactFirstName", "ContactLastName", "ContactTitle", "ContactDepartment", "ContactEmail", "ContactPhone", "ContactMobile", "ContactFax" };
+
     public async Task UpdateVendorMasterAsync(string vendorNumber, VendorMasterPatch patch, CancellationToken ct = default)
     {
         var fields = new Dictionary<string, string?>(patch.Fields);
+
+        // Contact edits update the supplier's default ContactPerson in place (read its key,
+        // merge changes over current, write). ContactFunction is portal-only (SAP function is coded).
+        if (ContactFields.Any(fields.ContainsKey))
+        {
+            var q = await PostAsync(_opt.QuerySupplierPath, Sap.QueryAction, Sap.BuildQueryByInternalId(vendorNumber), ct);
+            var supplier = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "Supplier");
+            var contactEl = supplier is null ? null : FindDefaultContact(supplier);
+            string? K(string n) => contactEl?.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
+            var current = ParseSupplier(q);
+            string? V(string field, string? cur) => fields.TryGetValue(field, out var v) ? v : cur;
+
+            var contact = new SapContact
+            {
+                Uuid = K("BusinessPartnerContactUUID"),
+                InternalId = K("BusinessPartnerContactInternalID"),
+                FirstName = V("ContactFirstName", current?.ContactFirstName),
+                LastName = V("ContactLastName", current?.ContactLastName),
+                Title = V("ContactTitle", current?.ContactTitle),
+                Department = V("ContactDepartment", current?.ContactDepartment),
+                Email = V("ContactEmail", current?.ContactEmail),
+                Phone = V("ContactPhone", current?.ContactPhone),
+                Mobile = V("ContactMobile", current?.ContactMobile),
+                Fax = V("ContactFax", current?.ContactFax),
+            };
+            var cdoc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction, Sap.BuildContactPerson(vendorNumber, contact), ct);
+            if (Local(cdoc.Root, "MaximumLogItemSeverityCode") == "3")
+                throw new InvalidOperationException(
+                    $"SAP ByDesign contact update for {vendorNumber} failed: {Local(cdoc.Root, "Note") ?? "unknown error"}");
+            _log.LogInformation("[SAP ByD] ContactPerson updated on supplier {Number}", vendorNumber);
+            return;
+        }
+
         var ctx = new SapMaintainContext();
         var needsAddress = AddressFields.Any(fields.ContainsKey);
         var needsBanking = BankingFields.Any(fields.ContainsKey);
@@ -237,6 +273,17 @@ public class SapByDesignErpClient : IErpClient
         s.Split(' ', StringSplitOptions.RemoveEmptyEntries)
          .Select(w => w.Length == 1 ? w.ToUpperInvariant() : char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
 
+    private static string? TitleCaseOrNull(string? s) => string.IsNullOrWhiteSpace(s) ? null : TitleCase(s);
+
+    /// <summary>The default ContactPerson element (or the first), if any.</summary>
+    internal static XElement? FindDefaultContact(XElement supplier)
+    {
+        var contacts = supplier.Descendants().Where(e => e.Name.LocalName == "ContactPerson").ToList();
+        return contacts.FirstOrDefault(c => string.Equals(
+                   c.Elements().FirstOrDefault(e => e.Name.LocalName == "DefaultContactPersonIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase))
+               ?? contacts.FirstOrDefault();
+    }
+
     // ---------------------------------------------------------------- http
     private async Task<XDocument> PostAsync(string path, string soapAction, string envelope, CancellationToken ct)
     {
@@ -276,16 +323,24 @@ public class SapByDesignErpClient : IErpClient
             Tin = F("TaxID") ?? F("PartyTaxID"),
         };
 
-        // Primary contact = the default ContactPerson (GivenName + FamilyName), title-cased.
-        var contacts = supplier.Descendants().Where(e => e.Name.LocalName == "ContactPerson").ToList();
-        var contact = contacts.FirstOrDefault(c => string.Equals(
-                          c.Elements().FirstOrDefault(e => e.Name.LocalName == "DefaultContactPersonIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase))
-                      ?? contacts.FirstOrDefault();
+        // Primary contact = the default ContactPerson. Names are title-cased (SAP stores upper).
+        var contact = FindDefaultContact(supplier);
         if (contact is not null)
         {
             string? C(string n) => contact.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
-            var name = string.Join(" ", new[] { C("GivenName"), C("FamilyName") }.Where(s => !string.IsNullOrWhiteSpace(s)));
-            if (!string.IsNullOrWhiteSpace(name)) dto.PrimaryContact = TitleCase(name);
+            dto.ContactFirstName = TitleCaseOrNull(C("GivenName"));
+            dto.ContactLastName = TitleCaseOrNull(C("FamilyName"));
+            dto.ContactTitle = C("WorkplaceFunctionalTitleName");
+            dto.ContactDepartment = C("WorkplaceDepartmentName");
+            dto.ContactEmail = C("WorkplaceEMailURI");
+            dto.ContactFax = C("WorkplaceFacsimileFormattedNumberDescription");
+            foreach (var tel in contact.Elements().Where(e => e.Name.LocalName == "WorkplaceTelephone"))
+            {
+                var num = tel.Elements().FirstOrDefault(e => e.Name.LocalName == "FormattedNumberDescription")?.Value;
+                var isMobile = string.Equals(tel.Elements().FirstOrDefault(e => e.Name.LocalName == "MobilePhoneNumberIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+                if (string.IsNullOrEmpty(num)) continue;
+                if (isMobile) dto.ContactMobile = num; else dto.ContactPhone = num;
+            }
         }
 
         // PO Box vs street address. SAP flags a PO Box with POBoxIndicator=true and carries

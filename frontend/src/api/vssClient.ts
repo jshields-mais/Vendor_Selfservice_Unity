@@ -32,8 +32,8 @@ export interface Tax {
   legalTaxName?: string | null; taxIdType: string; tinMasked?: string | null; taxClassification?: string | null; exemptPayee: string; w9OnFile?: string | null;
 }
 export interface Contacts {
-  primaryContact?: string | null; primaryTitle?: string | null; primaryEmail?: string | null; primaryPhone?: string | null;
-  apContactName?: string | null; apEmail?: string | null; salesContactName?: string | null; salesEmail?: string | null;
+  firstName?: string | null; lastName?: string | null; title?: string | null; function?: string | null;
+  department?: string | null; email?: string | null; phone?: string | null; mobile?: string | null; fax?: string | null;
 }
 export interface VendorDoc { id: string; name: string; fileRef?: string | null; validity: string; status: string; typeCode?: string | null; }
 export interface DocumentType { id: string; code: string; description: string; isActive: boolean; sortOrder: number; }

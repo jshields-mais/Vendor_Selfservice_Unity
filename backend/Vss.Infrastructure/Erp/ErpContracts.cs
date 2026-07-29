@@ -32,7 +32,18 @@ public class ErpVendorDto
     public string? Tin { get; set; }
     public string? TaxClassification { get; set; }
 
-    public string? PrimaryContact { get; set; }
+    // Primary contact (SAP default ContactPerson)
+    public string? ContactFirstName { get; set; }
+    public string? ContactLastName { get; set; }
+    public string? ContactTitle { get; set; }
+    public string? ContactFunction { get; set; }
+    public string? ContactDepartment { get; set; }
+    public string? ContactEmail { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? ContactMobile { get; set; }
+    public string? ContactFax { get; set; }
+
+    // Supplier-level address email/phone (not the contact)
     public string? PrimaryEmail { get; set; }
     public string? PrimaryPhone { get; set; }
 

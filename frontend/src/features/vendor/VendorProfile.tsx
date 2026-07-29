@@ -4,13 +4,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Button, Card, Label, TextField, SelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, useCommunicationCatalog, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "readonly";
 interface FieldDef {
   key: string; label: string; value: string; kind: Kind; options?: string[]; full?: boolean;
   /** Optional: field is shown only when this returns true for the current edited values. */
   showWhen?: (values: Record<string, string>) => boolean;
+  /** Optional: value must be non-empty to submit the section. */
+  required?: boolean;
 }
 
 const META: Record<string, { title: string; hint: string; section: string }> = {
@@ -37,14 +39,15 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
       ro("Status", "Portal status", `Linked · ${v.status}`),
     ];
     case "contacts": return [
-      t("PrimaryContact", "Primary contact", v.contacts.primaryContact),
-      t("PrimaryTitle", "Title", v.contacts.primaryTitle),
-      t("PrimaryEmail", "Primary email", v.contacts.primaryEmail),
-      t("PrimaryPhone", "Primary phone", v.contacts.primaryPhone),
-      t("ApContactName", "AP contact name", v.contacts.apContactName),
-      t("ApEmail", "AP email", v.contacts.apEmail),
-      t("SalesContactName", "Sales contact name", v.contacts.salesContactName),
-      t("SalesEmail", "Sales email", v.contacts.salesEmail),
+      { ...t("ContactFirstName", "First name", v.contacts.firstName), required: true },
+      { ...t("ContactLastName", "Last name", v.contacts.lastName), required: true },
+      t("ContactTitle", "Title", v.contacts.title),
+      t("ContactFunction", "Function", v.contacts.function),
+      t("ContactDepartment", "Department", v.contacts.department),
+      t("ContactEmail", "Email", v.contacts.email),
+      t("ContactPhone", "Phone", v.contacts.phone),
+      t("ContactMobile", "Mobile", v.contacts.mobile),
+      t("ContactFax", "Fax", v.contacts.fax),
     ];
     case "addresses": {
       // PO Box rule: a PO Box address shows the box number; a street address shows the
@@ -124,65 +127,11 @@ export function VendorProfile() {
                   nav("/submitted");
                 }} />}
         </Card>
-
-        {tab === "contacts" && <CommPrefsPanel vendor={vendor} onSubmitted={() => nav("/submitted")} />}
       </div>
     </AppShell>
   );
 }
 
-/** Per-document delivery preferences (Purchase Order → Email, ...) — reviewed like any change. */
-function CommPrefsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitted: () => void }) {
-  const qc = useQueryClient();
-  const { data: catalog } = useCommunicationCatalog();
-  const current = Object.fromEntries(vendor.communicationPreferences.map((p) => [p.businessDocument, p.channel]));
-  const [values, setValues] = useState<Record<string, string>>(current);
-
-  const options = ["No preference", ...(catalog?.channels ?? [])];
-  const docs = catalog?.documents ?? [];
-  const diffs: ChangeDiff[] = docs
-    .filter((d) => (values[d.name] ?? "No preference") !== (current[d.name] ?? "No preference"))
-    .map((d) => ({ field: d.name, fromValue: current[d.name] ?? "No preference", toValue: values[d.name] ?? "No preference" }));
-
-  const submit = useMutation({
-    mutationFn: () => changeRequests.create({ section: "Communication preferences", diffs }),
-    onSuccess: async () => {
-      await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]);
-      onSubmitted();
-    },
-  });
-
-  return (
-    <Card style={{ marginTop: 20 }}>
-      <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--colorNeutralStroke2)" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18 }}>Document communication preferences</div>
-        <div style={{ fontSize: 13, color: "var(--colorNeutralForeground3)", marginTop: 3 }}>Choose how you'd like to receive each business document. Changes are reviewed before syncing to the ERP.</div>
-      </div>
-      <div style={{ padding: "8px 0" }}>
-        {docs.map((d) => (
-          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 24px", borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{d.name}</div>
-              {!d.erpEnabled && <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)", marginTop: 1 }}>Recorded in the portal — ERP sync pending configuration</div>}
-            </div>
-            <select
-              value={values[d.name] ?? "No preference"}
-              onChange={(e) => setValues((v) => ({ ...v, [d.name]: e.target.value }))}
-              style={{ flex: "0 0 200px", padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-sm)", fontSize: 14, background: "#fff", color: "var(--colorNeutralForeground1)" }}
-            >
-              {options.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 24px" }}>
-        <Button variant="primary" disabled={diffs.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
-          {submit.isPending ? "Submitting…" : "Submit preferences for review"}
-        </Button>
-      </div>
-    </Card>
-  );
-}
 
 function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendor: Vendor; section: string; onSubmitted: () => void }) {
   const nav = useNavigate();
@@ -197,6 +146,9 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
     .filter((f) => f.kind !== "readonly" && values[f.key] !== f.value)
     .map((f) => ({ field: f.key, fromValue: f.value, toValue: values[f.key] }));
 
+  // Required fields (e.g. first/last name) must be non-empty to submit.
+  const missing = visible.filter((f) => f.required && !values[f.key]?.trim()).map((f) => f.label);
+
   const submit = useMutation({
     mutationFn: () => changeRequests.create({ section, diffs }),
     onSuccess: onSubmitted });
@@ -206,7 +158,7 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
       <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 22px" }}>
         {visible.map((f) => (
           <div key={f.key} style={f.full ? { gridColumn: "span 2" } : undefined}>
-            <Label>{f.label}</Label>
+            <Label>{f.label}{f.required ? " *" : ""}</Label>
             {f.kind === "readonly" ? <ReadonlyField value={f.value} />
               : f.kind === "select" ? (
                 <SelectField
@@ -222,13 +174,14 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
       </div>
 
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-1)", background: "var(--bg-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 13, color: "var(--fg-2)" }}>
-          {diffs.length === 0 ? "Changes are reviewed by City of Bozeman staff before syncing to the ERP."
+        <div style={{ fontSize: 13, color: missing.length ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)" }}>
+          {missing.length ? `${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} required.`
+            : diffs.length === 0 ? "Changes are reviewed by City of Bozeman staff before syncing to the ERP."
             : `${diffs.length} field${diffs.length > 1 ? "s" : ""} changed — reviewed by City staff before ERP sync.`}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="outline" onClick={() => nav("/console")}>Cancel</Button>
-          <Button variant="teal" disabled={diffs.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
+          <Button variant="teal" disabled={diffs.length === 0 || missing.length > 0 || submit.isPending} onClick={() => submit.mutate()}>
             {submit.isPending ? "Submitting…" : "Submit changes for review"}
           </Button>
         </div>
