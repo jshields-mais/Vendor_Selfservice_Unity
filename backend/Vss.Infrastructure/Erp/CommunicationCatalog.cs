@@ -16,13 +16,14 @@ public static class CommunicationCatalog
         public bool ErpEnabled => !string.IsNullOrEmpty(ServiceInterfaceCode);
     }
 
+    // The notification types offered on the Notifications tab. Only Purchase Order (11) has a
+    // confirmed CompoundServiceInterfaceCode; the others are recorded in the portal until
+    // their codes are confirmed (ErpEnabled = false).
     public static readonly IReadOnlyList<BusinessDocument> Documents = new[]
     {
+        new BusinessDocument("Remittance Advice Outbound", ""),
         new BusinessDocument("Purchase Order", "11"),            // confirmed
-        new BusinessDocument("Purchase Order Acknowledgment", ""),
-        new BusinessDocument("Request for Quotation", ""),
-        new BusinessDocument("Invoice", ""),
-        new BusinessDocument("Remittance Advice", ""),
+        new BusinessDocument("Contract", ""),
     };
 
     /// <summary>Channel display → CommunicationMediumTypeCode (INT/e-mail confirmed).</summary>

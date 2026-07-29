@@ -24,7 +24,7 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
             return StatusCode(StatusCodes.Status403Forbidden, "Account is not linked to a vendor record yet.");
 
         var v = await db.Vendors.Include(x => x.Documents).Include(x => x.CategoryCodes)
-            .Include(x => x.CommunicationPreferences)
+            .Include(x => x.Notifications).ThenInclude(n => n.Recipients)
             .FirstOrDefaultAsync(x => x.Id == user.VendorId, ct);
         if (v is null) return NotFound();
 
@@ -35,13 +35,13 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
         return VendorMapping.ToDto(v);
     }
 
-    /// <summary>Business documents + channels offered for communication preferences.</summary>
-    [HttpGet("communication-catalog")]
-    public ActionResult<CommunicationCatalogDto> CommunicationCatalog()
+    /// <summary>Notification types offered on the Notifications tab.</summary>
+    [HttpGet("notification-catalog")]
+    public ActionResult<NotificationCatalogDto> NotificationCatalog()
     {
-        var docs = Vss.Infrastructure.Erp.CommunicationCatalog.Documents
-            .Select(d => new CommunicationCatalogDocDto(d.Name, d.ErpEnabled)).ToArray();
-        return new CommunicationCatalogDto(docs, Vss.Infrastructure.Erp.CommunicationCatalog.Channels.ToArray());
+        var types = Vss.Infrastructure.Erp.CommunicationCatalog.Documents
+            .Select(d => new NotificationTypeDto(d.Name, d.ErpEnabled)).ToArray();
+        return new NotificationCatalogDto(types);
     }
 
     private async Task RefreshFromErpAsync(Vendor v, CancellationToken ct)

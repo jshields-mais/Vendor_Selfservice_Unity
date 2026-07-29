@@ -16,7 +16,8 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<ErpConfig> ErpConfigs => Set<ErpConfig>();
-    public DbSet<CommunicationPreference> CommunicationPreferences => Set<CommunicationPreference>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -32,8 +33,11 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
             e.HasIndex(v => v.Number).IsUnique();
             e.HasMany(v => v.CategoryCodes).WithOne().HasForeignKey(c => c.VendorId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(v => v.Documents).WithOne().HasForeignKey(d => d.VendorId).OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(v => v.CommunicationPreferences).WithOne().HasForeignKey(p => p.VendorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(v => v.Notifications).WithOne().HasForeignKey(n => n.VendorId).OnDelete(DeleteBehavior.Cascade);
         });
+
+        b.Entity<Notification>()
+            .HasMany(n => n.Recipients).WithOne().HasForeignKey(r => r.NotificationId).OnDelete(DeleteBehavior.Cascade);
 
         b.Entity<VendorUser>(e =>
         {

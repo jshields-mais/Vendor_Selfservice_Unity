@@ -86,6 +86,8 @@ public class ErpCommunicationPreference
     public string BusinessDocument { get; set; } = string.Empty; // e.g. "Purchase Order"
     public string Channel { get; set; } = string.Empty;          // e.g. "Email"
     public string? Email { get; set; }
+    /// <summary>False when the vendor cleared all recipients → disable the SAP arrangement.</summary>
+    public bool Enabled { get; set; } = true;
 }
 
 /// <summary>

@@ -153,7 +153,7 @@ internal static class Sap
     /// EnabledIndicator, the channel (CommunicationMediumTypeCode) and, for email, the address.
     /// </summary>
     public static string BuildCommunicationArrangements(string internalId,
-        IEnumerable<(string ServiceInterfaceCode, string MediumCode, string? Email)> arrangements)
+        IEnumerable<(string ServiceInterfaceCode, string MediumCode, string? Email, bool Enabled)> arrangements)
     {
         var supplier = new XElement("Supplier",
             new XAttribute("actionCode", "04"),
@@ -164,9 +164,9 @@ internal static class Sap
             var arr = new XElement("CommunicationArrangement",
                 new XAttribute("actionCode", "04"),
                 new XElement("CompoundServiceInterfaceCode", a.ServiceInterfaceCode),
-                new XElement("EnabledIndicator", "true"),
+                new XElement("EnabledIndicator", a.Enabled ? "true" : "false"),
                 new XElement("CommunicationMediumTypeCode", a.MediumCode));
-            if (a.MediumCode == "INT" && !string.IsNullOrEmpty(a.Email))
+            if (a.Enabled && a.MediumCode == "INT" && !string.IsNullOrEmpty(a.Email))
                 arr.Add(new XElement("EMailURI", a.Email));
             supplier.Add(arr);
         }

@@ -29,6 +29,7 @@ const VENDOR_NAV: NavItem[] = [
   { label: "Banking & remittance", icon: "bank", to: "/profile/banking" },
   { label: "Tax & W-9", icon: "receipt", to: "/profile/tax" },
   { label: "Documents", icon: "docs", to: "/profile/documents" },
+  { label: "Notifications", icon: "changes", to: "/profile/notifications" },
   { label: "Category codes", icon: "tag", to: "/profile/categories" },
 ];
 

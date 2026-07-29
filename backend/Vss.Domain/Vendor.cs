@@ -72,8 +72,8 @@ public class Vendor
     // ---- Compliance documents ----
     public List<VendorDocument> Documents { get; set; } = new();
 
-    // ---- Per-document delivery preferences (Purchase Order → Email, ...) ----
-    public List<CommunicationPreference> CommunicationPreferences { get; set; } = new();
+    // ---- Per-document email notifications (To / Cc / Bcc recipients) ----
+    public List<Notification> Notifications { get; set; } = new();
 
     public DateTimeOffset? LastSyncedAt { get; set; }
 }

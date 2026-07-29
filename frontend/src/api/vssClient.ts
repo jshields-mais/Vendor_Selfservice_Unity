@@ -37,13 +37,14 @@ export interface Contacts {
 }
 export interface VendorDoc { id: string; name: string; fileRef?: string | null; validity: string; status: string; typeCode?: string | null; }
 export interface DocumentType { id: string; code: string; description: string; isActive: boolean; sortOrder: number; }
-export interface CommunicationPreference { businessDocument: string; channel: string; email?: string | null; }
-export interface CommunicationCatalog { documents: { name: string; erpEnabled: boolean }[]; channels: string[]; }
+export interface NotificationRecipient { kind: string; email: string; }
+export interface Notification { type: string; recipients: NotificationRecipient[]; }
+export interface NotificationCatalog { types: { name: string; erpEnabled: boolean }[]; }
 
 export interface Vendor {
   number: string; legalName: string; dba?: string | null; entityType: string; website?: string | null; status: string;
   address: Address; banking: Banking; tax: Tax; contacts: Contacts;
-  categoryCodes: string[]; documents: VendorDoc[]; communicationPreferences: CommunicationPreference[];
+  categoryCodes: string[]; documents: VendorDoc[]; notifications: Notification[];
 }
 
 export interface LinkMatchResult {
@@ -83,7 +84,7 @@ export const useMyChangeRequests = (enabled: boolean) =>
   useApiQuery<ChangeRequest[]>(VSS_BASE, "api/v1/change-requests?mine=true", undefined, { enabled });
 
 export const useDocumentTypes = () => useApiQuery<DocumentType[]>(VSS_BASE, "api/v1/documents/types");
-export const useCommunicationCatalog = () => useApiQuery<CommunicationCatalog>(VSS_BASE, "api/v1/vendor/communication-catalog");
+export const useNotificationCatalog = () => useApiQuery<NotificationCatalog>(VSS_BASE, "api/v1/vendor/notification-catalog");
 
 // ------------------------------------------------------------------ Mutations
 export const linkRequests = {

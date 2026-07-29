@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Button, Card, Label, TextField, SelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, useNotificationCatalog, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "readonly";
 interface FieldDef {
@@ -22,7 +22,8 @@ const META: Record<string, { title: string; hint: string; section: string }> = {
   banking: { title: "Banking & remittance", hint: "EFT details. Changes always require City approval.", section: "Banking & remittance" },
   tax: { title: "Tax & W-9", hint: "Tax identification and classification on file.", section: "Tax & W-9" },
   documents: { title: "Documents & compliance", hint: "Upload and keep required documents current.", section: "Documents" },
-  categories: { title: "Category codes", hint: "Commodity and NIGP codes you supply against.", section: "Category codes" } };
+  categories: { title: "Category codes", hint: "Commodity and NIGP codes you supply against.", section: "Category codes" },
+  notifications: { title: "Notifications", hint: "Email recipients for the documents the City sends you.", section: "Notifications" } };
 
 const t = (key: string, label: string, value?: string | null, full = false): FieldDef => ({ key, label, value: value ?? "", kind: "text", full });
 const sel = (key: string, label: string, value: string | null | undefined, options: string[]): FieldDef => ({ key, label, value: value ?? "", kind: "select", options });
@@ -118,6 +119,7 @@ export function VendorProfile() {
 
           {tab === "documents" ? <DocumentsPanel vendor={vendor} />
             : tab === "categories" ? <CategoriesPanel vendor={vendor} />
+            : tab === "notifications" ? <NotificationsPanel vendor={vendor} onSubmitted={() => nav("/submitted")} />
             : <FieldEditor key={tab} tab={tab} vendor={vendor} section={meta.section}
                 onSubmitted={async () => {
                   await Promise.all([
@@ -292,6 +294,85 @@ function CategoriesPanel({ vendor }: { vendor: Vendor }) {
         ))}
       </div>
       <button style={{ marginTop: 18, padding: "10px 16px", border: "1px dashed var(--border-2)", borderRadius: 6, background: "var(--bg-2)", color: "var(--fg-1)", fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add category code</button>
+    </div>
+  );
+}
+
+const NOTIF_KINDS = ["To", "Cc", "Bcc"] as const;
+const parseEmails = (text: string) =>
+  text.split(/[,;\n\r]+/).map((s) => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+
+/** Notifications: per-document (Remittance Advice Outbound / Purchase Order / Contract)
+ *  To/CC/BCC email recipients. Reviewed, then written to the ERP communication section. */
+function NotificationsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitted: () => void }) {
+  const qc = useQueryClient();
+  const { data: catalog } = useNotificationCatalog();
+
+  // current[type][kind] = joined emails (", ")
+  const current = useMemo(() => {
+    const m: Record<string, Record<string, string>> = {};
+    for (const n of vendor.notifications) {
+      m[n.type] = { To: "", Cc: "", Bcc: "" };
+      for (const k of NOTIF_KINDS) m[n.type][k] = n.recipients.filter((r) => r.kind === k).map((r) => r.email).join(", ");
+    }
+    return m;
+  }, [vendor.notifications]);
+
+  const [text, setText] = useState<Record<string, string>>({}); // key `${type}::${kind}` -> raw text
+  const val = (type: string, kind: string) => text[`${type}::${kind}`] ?? current[type]?.[kind] ?? "";
+  const setVal = (type: string, kind: string, v: string) => setText((t) => ({ ...t, [`${type}::${kind}`]: v }));
+
+  const types = catalog?.types ?? [];
+  const diffs: ChangeDiff[] = [];
+  for (const ty of types) for (const k of NOTIF_KINDS) {
+    const to = parseEmails(val(ty.name, k)).join(", ");
+    const from = parseEmails(current[ty.name]?.[k] ?? "").join(", ");
+    if (to !== from) diffs.push({ field: `${ty.name} · ${k}`, fromValue: from, toValue: to });
+  }
+  // A type with any recipients must have at least one To.
+  const invalid = types.filter((ty) => {
+    const any = NOTIF_KINDS.some((k) => parseEmails(val(ty.name, k)).length > 0);
+    return any && parseEmails(val(ty.name, "To")).length === 0;
+  }).map((ty) => ty.name);
+
+  const submit = useMutation({
+    mutationFn: () => changeRequests.create({ section: "Notifications", diffs }),
+    onSuccess: async () => {
+      await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]);
+      onSubmitted();
+    },
+  });
+
+  const box: React.CSSProperties = { width: "100%", minHeight: 54, padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-sm)", fontSize: 13, fontFamily: "var(--font-sans)", color: "var(--colorNeutralForeground1)", resize: "vertical" };
+
+  return (
+    <div style={{ padding: "8px 0" }}>
+      {types.map((ty) => (
+        <div key={ty.name} style={{ padding: "16px 24px", borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{ty.name}</div>
+            {!ty.erpEnabled && <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)" }}>Recorded in the portal — ERP sync pending configuration</div>}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+            {NOTIF_KINDS.map((k) => (
+              <div key={k}>
+                <Label>{k === "To" ? "To *" : k.toUpperCase()}</Label>
+                <textarea value={val(ty.name, k)} onChange={(e) => setVal(ty.name, k, e.target.value)}
+                  placeholder="email@company.com (one per line or comma-separated)" style={box} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 13, color: invalid.length ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)" }}>
+          {invalid.length ? `${invalid.join(", ")}: at least one To address is required.`
+            : "Changes are reviewed by City staff before syncing to the ERP."}
+        </div>
+        <Button variant="primary" disabled={diffs.length === 0 || invalid.length > 0 || submit.isPending} onClick={() => submit.mutate()}>
+          {submit.isPending ? "Submitting…" : "Submit notifications for review"}
+        </Button>
+      </div>
     </div>
   );
 }

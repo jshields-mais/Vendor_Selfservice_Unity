@@ -19,7 +19,8 @@ public static class VendorMapping
         new ContactsDto(v.ContactFirstName, v.ContactLastName, v.ContactTitle, v.ContactFunction, v.ContactDepartment, v.ContactEmail, v.ContactPhone, v.ContactMobile, v.ContactFax),
         v.CategoryCodes.Select(c => c.Code).ToArray(),
         v.Documents.Select(d => new DocumentDto(d.Id, d.Name, d.FileRef, d.Validity, d.Status.ToString(), d.DocumentTypeCode)).ToArray(),
-        v.CommunicationPreferences.Select(p => new CommunicationPreferenceDto(p.BusinessDocument, p.Channel, p.Email)).ToArray());
+        v.Notifications.Select(n => new NotificationDto(n.Type,
+            n.Recipients.Select(r => new NotificationRecipientDto(r.Kind, r.Email)).ToArray())).ToArray());
 
     /// <summary>Rough completeness score used for the "Profile complete" stat.</summary>
     public static int CompletenessPct(Vendor v)

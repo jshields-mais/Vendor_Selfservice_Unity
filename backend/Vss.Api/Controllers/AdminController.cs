@@ -128,31 +128,50 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
             }
             cr.Vendor.LastSyncedAt = approvedAt;
         }
-        else if (cr.Section == "Communication preferences")
+        else if (cr.Section == "Notifications")
         {
-            // Each diff is one business document (Field) → preferred channel (ToValue).
-            var prefsDb = await db.CommunicationPreferences.Where(p => p.VendorId == cr.Vendor.Id).ToListAsync(ct);
+            // Each diff is "<Type> · <Kind>" (e.g. "Purchase Order · To") → comma/newline emails.
+            var notifs = await db.Notifications.Include(n => n.Recipients)
+                .Where(n => n.VendorId == cr.Vendor.Id).ToListAsync(ct);
+            Notification Ensure(string type)
+            {
+                var n = notifs.FirstOrDefault(x => x.Type == type);
+                if (n is null) { n = new Notification { VendorId = cr.Vendor.Id, Type = type }; db.Notifications.Add(n); notifs.Add(n); }
+                return n;
+            }
+            var touchedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var d in cr.Diffs)
             {
-                var existing = prefsDb.FirstOrDefault(p => p.BusinessDocument == d.Field);
-                if (string.IsNullOrWhiteSpace(d.ToValue) || d.ToValue == "No preference")
-                {
-                    if (existing is not null) { db.CommunicationPreferences.Remove(existing); prefsDb.Remove(existing); }
-                    continue;
-                }
-                var email = d.ToValue == "Email" ? cr.Vendor.PrimaryEmail : null;
-                if (existing is null)
-                {
-                    var added = new CommunicationPreference { VendorId = cr.Vendor.Id, BusinessDocument = d.Field, Channel = d.ToValue, Email = email };
-                    db.CommunicationPreferences.Add(added);
-                    prefsDb.Add(added);
-                }
-                else { existing.Channel = d.ToValue; existing.Email = email; }
+                var parts = d.Field.Split(" · ", StringSplitOptions.TrimEntries);
+                if (parts.Length != 2) continue;
+                var (type, kind) = (parts[0], parts[1]);
+                touchedTypes.Add(type);
+                var emails = (d.ToValue ?? "").Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                var n = Ensure(type);
+                foreach (var r in n.Recipients.Where(r => r.Kind == kind).ToList()) n.Recipients.Remove(r);
+                foreach (var em in emails) n.Recipients.Add(new NotificationRecipient { NotificationId = n.Id, Kind = kind, Email = em });
             }
-            var prefs = prefsDb
-                .Select(p => new ErpCommunicationPreference { BusinessDocument = p.BusinessDocument, Channel = p.Channel, Email = p.Email })
+
+            // SAP push, for every type this request touched: the primary To → CommunicationArrangement
+            // email (enabled); a type left with no To disables its arrangement. Coded types only.
+            var prefs = touchedTypes
+                .Select(type => new
+                {
+                    Type = type,
+                    To = notifs.FirstOrDefault(n => n.Type == type)?.Recipients
+                        .Where(r => r.Kind == "To").Select(r => r.Email).FirstOrDefault(),
+                })
+                .Select(x => new ErpCommunicationPreference
+                {
+                    BusinessDocument = x.Type, Channel = "Email",
+                    Email = x.To, Enabled = !string.IsNullOrEmpty(x.To),
+                })
                 .ToList();
-            await erp.UpdateCommunicationPreferencesAsync(cr.Vendor.Number, prefs, ct);
+            if (prefs.Count > 0) await erp.UpdateCommunicationPreferencesAsync(cr.Vendor.Number, prefs, ct);
+
+            // Drop notifications left with no recipients (after the SAP push has read them).
+            foreach (var n in notifs.Where(n => n.Recipients.Count == 0).ToList()) { db.Notifications.Remove(n); notifs.Remove(n); }
             cr.Vendor.LastSyncedAt = approvedAt;
         }
         else
