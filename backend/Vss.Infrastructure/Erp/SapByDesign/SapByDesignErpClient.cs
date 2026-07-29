@@ -122,6 +122,27 @@ public class SapByDesignErpClient : IErpClient
         return true;
     }
 
+    public async Task<int> UpdateCommunicationPreferencesAsync(string vendorNumber, IReadOnlyList<ErpCommunicationPreference> prefs, CancellationToken ct = default)
+    {
+        // Resolve each preference to its SAP codes; skip documents/channels without a code.
+        var arrangements = prefs
+            .Select(p => (svc: CommunicationCatalog.ServiceInterfaceCodeFor(p.BusinessDocument),
+                          med: CommunicationCatalog.MediumCodeFor(p.Channel), p.Email))
+            .Where(x => x.svc is not null && x.med is not null)
+            .Select(x => (x.svc!, x.med!, x.Email))
+            .ToList();
+        if (arrangements.Count == 0) return 0;
+
+        var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
+            Sap.BuildCommunicationArrangements(vendorNumber, arrangements), ct);
+        if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")
+            throw new InvalidOperationException(
+                $"SAP ByDesign communication preferences for {vendorNumber} failed: {Local(doc.Root, "Note") ?? "unknown error"}");
+
+        _log.LogInformation("[SAP ByD] {Count} communication arrangement(s) set on supplier {Number}", arrangements.Count, vendorNumber);
+        return arrangements.Count;
+    }
+
     /// <summary>
     /// Decides how to write bank details given the supplier's current bank record(s) and
     /// the approval date, implementing SAP's validity-dated bank data:

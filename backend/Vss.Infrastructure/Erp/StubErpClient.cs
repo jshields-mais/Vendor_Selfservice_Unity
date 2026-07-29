@@ -68,6 +68,13 @@ public class StubErpClient : IErpClient
         return Task.FromResult(true);
     }
 
+    public Task<int> UpdateCommunicationPreferencesAsync(string vendorNumber, IReadOnlyList<ErpCommunicationPreference> prefs, CancellationToken ct = default)
+    {
+        foreach (var p in prefs)
+            _logger.LogInformation("[ERP stub] comm preference {Doc} -> {Channel} for vendor {Number}", p.BusinessDocument, p.Channel, vendorNumber);
+        return Task.FromResult(prefs.Count);
+    }
+
     private static string Norm(string? s) => (s ?? string.Empty).Trim().ToUpperInvariant();
 
     private static ErpVendorDto ToDto(Vendor v) => new()

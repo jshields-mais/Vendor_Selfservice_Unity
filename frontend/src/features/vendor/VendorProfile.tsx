@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Button, Card, Label, TextField, SelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, useCommunicationCatalog, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "readonly";
 interface FieldDef {
@@ -124,8 +124,63 @@ export function VendorProfile() {
                   nav("/submitted");
                 }} />}
         </Card>
+
+        {tab === "contacts" && <CommPrefsPanel vendor={vendor} onSubmitted={() => nav("/submitted")} />}
       </div>
     </AppShell>
+  );
+}
+
+/** Per-document delivery preferences (Purchase Order → Email, ...) — reviewed like any change. */
+function CommPrefsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitted: () => void }) {
+  const qc = useQueryClient();
+  const { data: catalog } = useCommunicationCatalog();
+  const current = Object.fromEntries(vendor.communicationPreferences.map((p) => [p.businessDocument, p.channel]));
+  const [values, setValues] = useState<Record<string, string>>(current);
+
+  const options = ["No preference", ...(catalog?.channels ?? [])];
+  const docs = catalog?.documents ?? [];
+  const diffs: ChangeDiff[] = docs
+    .filter((d) => (values[d.name] ?? "No preference") !== (current[d.name] ?? "No preference"))
+    .map((d) => ({ field: d.name, fromValue: current[d.name] ?? "No preference", toValue: values[d.name] ?? "No preference" }));
+
+  const submit = useMutation({
+    mutationFn: () => changeRequests.create({ section: "Communication preferences", diffs }),
+    onSuccess: async () => {
+      await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]);
+      onSubmitted();
+    },
+  });
+
+  return (
+    <Card style={{ marginTop: 20 }}>
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--colorNeutralStroke2)" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18 }}>Document communication preferences</div>
+        <div style={{ fontSize: 13, color: "var(--colorNeutralForeground3)", marginTop: 3 }}>Choose how you'd like to receive each business document. Changes are reviewed before syncing to the ERP.</div>
+      </div>
+      <div style={{ padding: "8px 0" }}>
+        {docs.map((d) => (
+          <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 24px", borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{d.name}</div>
+              {!d.erpEnabled && <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)", marginTop: 1 }}>Recorded in the portal — ERP sync pending configuration</div>}
+            </div>
+            <select
+              value={values[d.name] ?? "No preference"}
+              onChange={(e) => setValues((v) => ({ ...v, [d.name]: e.target.value }))}
+              style={{ flex: "0 0 200px", padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-sm)", fontSize: 14, background: "#fff", color: "var(--colorNeutralForeground1)" }}
+            >
+              {options.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 24px" }}>
+        <Button variant="primary" disabled={diffs.length === 0 || submit.isPending} onClick={() => submit.mutate()}>
+          {submit.isPending ? "Submitting…" : "Submit preferences for review"}
+        </Button>
+      </div>
+    </Card>
   );
 }
 

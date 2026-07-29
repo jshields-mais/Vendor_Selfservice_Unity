@@ -24,6 +24,7 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
             return StatusCode(StatusCodes.Status403Forbidden, "Account is not linked to a vendor record yet.");
 
         var v = await db.Vendors.Include(x => x.Documents).Include(x => x.CategoryCodes)
+            .Include(x => x.CommunicationPreferences)
             .FirstOrDefaultAsync(x => x.Id == user.VendorId, ct);
         if (v is null) return NotFound();
 
@@ -32,6 +33,15 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
         // the addresses page reflects the PO Box / street shape held in the ERP.
         await RefreshFromErpAsync(v, ct);
         return VendorMapping.ToDto(v);
+    }
+
+    /// <summary>Business documents + channels offered for communication preferences.</summary>
+    [HttpGet("communication-catalog")]
+    public ActionResult<CommunicationCatalogDto> CommunicationCatalog()
+    {
+        var docs = Vss.Infrastructure.Erp.CommunicationCatalog.Documents
+            .Select(d => new CommunicationCatalogDocDto(d.Name, d.ErpEnabled)).ToArray();
+        return new CommunicationCatalogDto(docs, Vss.Infrastructure.Erp.CommunicationCatalog.Channels.ToArray());
     }
 
     private async Task RefreshFromErpAsync(Vendor v, CancellationToken ct)

@@ -18,6 +18,9 @@ public record BankingDto(string PaymentMethod, string? BankName, string? Routing
 public record TaxDto(string? LegalTaxName, string TaxIdType, string? TinMasked, string? TaxClassification, string ExemptPayee, string? W9OnFile);
 public record ContactsDto(string? PrimaryContact, string? PrimaryTitle, string? PrimaryEmail, string? PrimaryPhone, string? ApContactName, string? ApEmail, string? SalesContactName, string? SalesEmail);
 public record DocumentDto(Guid Id, string Name, string? FileRef, string Validity, string Status, string? TypeCode);
+public record CommunicationPreferenceDto(string BusinessDocument, string Channel, string? Email);
+public record CommunicationCatalogDocDto(string Name, bool ErpEnabled);
+public record CommunicationCatalogDto(CommunicationCatalogDocDto[] Documents, string[] Channels);
 
 public record VendorDto(
     string Number,
@@ -31,7 +34,8 @@ public record VendorDto(
     TaxDto Tax,
     ContactsDto Contacts,
     string[] CategoryCodes,
-    DocumentDto[] Documents);
+    DocumentDto[] Documents,
+    CommunicationPreferenceDto[] CommunicationPreferences);
 
 // ---- Account linking ----
 public record LinkRequestCreateDto(string Method, string? VendorNumber, string? Pin, string? TaxId, string? Zip);

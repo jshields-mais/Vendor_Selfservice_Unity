@@ -128,6 +128,33 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
             }
             cr.Vendor.LastSyncedAt = approvedAt;
         }
+        else if (cr.Section == "Communication preferences")
+        {
+            // Each diff is one business document (Field) → preferred channel (ToValue).
+            var prefsDb = await db.CommunicationPreferences.Where(p => p.VendorId == cr.Vendor.Id).ToListAsync(ct);
+            foreach (var d in cr.Diffs)
+            {
+                var existing = prefsDb.FirstOrDefault(p => p.BusinessDocument == d.Field);
+                if (string.IsNullOrWhiteSpace(d.ToValue) || d.ToValue == "No preference")
+                {
+                    if (existing is not null) { db.CommunicationPreferences.Remove(existing); prefsDb.Remove(existing); }
+                    continue;
+                }
+                var email = d.ToValue == "Email" ? cr.Vendor.PrimaryEmail : null;
+                if (existing is null)
+                {
+                    var added = new CommunicationPreference { VendorId = cr.Vendor.Id, BusinessDocument = d.Field, Channel = d.ToValue, Email = email };
+                    db.CommunicationPreferences.Add(added);
+                    prefsDb.Add(added);
+                }
+                else { existing.Channel = d.ToValue; existing.Email = email; }
+            }
+            var prefs = prefsDb
+                .Select(p => new ErpCommunicationPreference { BusinessDocument = p.BusinessDocument, Channel = p.Channel, Email = p.Email })
+                .ToList();
+            await erp.UpdateCommunicationPreferencesAsync(cr.Vendor.Number, prefs, ct);
+            cr.Vendor.LastSyncedAt = approvedAt;
+        }
         else
         {
             var patch = new VendorMasterPatch { EffectiveDate = approvedAt };

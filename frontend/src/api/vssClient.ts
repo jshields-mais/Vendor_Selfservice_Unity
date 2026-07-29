@@ -37,11 +37,13 @@ export interface Contacts {
 }
 export interface VendorDoc { id: string; name: string; fileRef?: string | null; validity: string; status: string; typeCode?: string | null; }
 export interface DocumentType { id: string; code: string; description: string; isActive: boolean; sortOrder: number; }
+export interface CommunicationPreference { businessDocument: string; channel: string; email?: string | null; }
+export interface CommunicationCatalog { documents: { name: string; erpEnabled: boolean }[]; channels: string[]; }
 
 export interface Vendor {
   number: string; legalName: string; dba?: string | null; entityType: string; website?: string | null; status: string;
   address: Address; banking: Banking; tax: Tax; contacts: Contacts;
-  categoryCodes: string[]; documents: VendorDoc[];
+  categoryCodes: string[]; documents: VendorDoc[]; communicationPreferences: CommunicationPreference[];
 }
 
 export interface LinkMatchResult {
@@ -81,6 +83,7 @@ export const useMyChangeRequests = (enabled: boolean) =>
   useApiQuery<ChangeRequest[]>(VSS_BASE, "api/v1/change-requests?mine=true", undefined, { enabled });
 
 export const useDocumentTypes = () => useApiQuery<DocumentType[]>(VSS_BASE, "api/v1/documents/types");
+export const useCommunicationCatalog = () => useApiQuery<CommunicationCatalog>(VSS_BASE, "api/v1/vendor/communication-catalog");
 
 // ------------------------------------------------------------------ Mutations
 export const linkRequests = {

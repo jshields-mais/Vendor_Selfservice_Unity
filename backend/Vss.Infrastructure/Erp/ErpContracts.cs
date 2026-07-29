@@ -69,6 +69,14 @@ public class ErpAttachment
     public byte[] Content { get; set; } = Array.Empty<byte>();
 }
 
+/// <summary>A supplier's preferred delivery channel for one business document.</summary>
+public class ErpCommunicationPreference
+{
+    public string BusinessDocument { get; set; } = string.Empty; // e.g. "Purchase Order"
+    public string Channel { get; set; } = string.Empty;          // e.g. "Email"
+    public string? Email { get; set; }
+}
+
 /// <summary>
 /// Boundary to the City's ERP vendor master. The portal never writes the ERP
 /// directly outside this interface; approvals call <see cref="UpdateVendorMasterAsync"/>.
@@ -83,4 +91,8 @@ public interface IErpClient
     /// <summary>Adds a document to the supplier's attachments. Returns false if the
     /// provider doesn't support attachments (the caller keeps the file in the portal).</summary>
     Task<bool> AddSupplierAttachmentAsync(string vendorNumber, ErpAttachment attachment, CancellationToken ct = default);
+
+    /// <summary>Writes the supplier's per-document delivery preferences. Returns the number
+    /// of preferences pushed to the ERP (0 if the provider/document isn't ERP-enabled).</summary>
+    Task<int> UpdateCommunicationPreferencesAsync(string vendorNumber, IReadOnlyList<ErpCommunicationPreference> preferences, CancellationToken ct = default);
 }

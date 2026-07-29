@@ -147,6 +147,35 @@ internal static class Sap
             supplier));
     }
 
+    /// <summary>
+    /// Builds a MaintainBundle setting per-document communication preferences. Each entry is a
+    /// CommunicationArrangement: the business document (CompoundServiceInterfaceCode), an
+    /// EnabledIndicator, the channel (CommunicationMediumTypeCode) and, for email, the address.
+    /// </summary>
+    public static string BuildCommunicationArrangements(string internalId,
+        IEnumerable<(string ServiceInterfaceCode, string MediumCode, string? Email)> arrangements)
+    {
+        var supplier = new XElement("Supplier",
+            new XAttribute("actionCode", "04"),
+            new XElement("InternalID", internalId));
+
+        foreach (var a in arrangements)
+        {
+            var arr = new XElement("CommunicationArrangement",
+                new XAttribute("actionCode", "04"),
+                new XElement("CompoundServiceInterfaceCode", a.ServiceInterfaceCode),
+                new XElement("EnabledIndicator", "true"),
+                new XElement("CommunicationMediumTypeCode", a.MediumCode));
+            if (a.MediumCode == "INT" && !string.IsNullOrEmpty(a.Email))
+                arr.Add(new XElement("EMailURI", a.Email));
+            supplier.Add(arr);
+        }
+
+        return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
+            new XElement("BasicMessageHeader"),
+            supplier));
+    }
+
     /// <summary>SAP's high date for an unlimited "valid to" (9999-12-31).</summary>
     public static readonly DateOnly UnlimitedDate = new(9999, 12, 31);
 

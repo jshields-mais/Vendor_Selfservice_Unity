@@ -71,6 +71,13 @@ public class BusinessCentralErpClient(
         return Task.FromResult(false);
     }
 
+    public Task<int> UpdateCommunicationPreferencesAsync(string vendorNumber, IReadOnlyList<ErpCommunicationPreference> prefs, CancellationToken ct = default)
+    {
+        // BC models document sending on the vendor's document-sending profile; not wired yet.
+        logger.LogWarning("[BC] communication preferences not implemented; kept in the portal for vendor {Number}", vendorNumber);
+        return Task.FromResult(0);
+    }
+
     // ---------------------------------------------------------------- http
     private async Task<HttpRequestMessage> AuthRequestAsync(HttpMethod method, string url, CancellationToken ct)
     {
