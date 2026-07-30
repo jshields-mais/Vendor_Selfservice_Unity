@@ -118,6 +118,14 @@ export function SelectField({ options, ...rest }: SelectHTMLAttributes<HTMLSelec
   );
 }
 
+export function CodeSelectField({ options, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string; label: string }[] }) {
+  return (
+    <select {...rest} style={{ ...fieldBox, ...rest.style }}>
+      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
 export function ReadonlyField({ value }: { value?: string | null }) {
   return (
     <div style={{ ...fieldBox, background: "var(--colorNeutralBackground3)", color: "var(--colorNeutralForeground2)" }}>{value ?? "—"}</div>

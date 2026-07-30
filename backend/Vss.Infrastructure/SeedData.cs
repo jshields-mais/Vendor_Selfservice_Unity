@@ -64,8 +64,9 @@ public static class SeedData
             W9OnFile = "Signed 02/14/2026",
             ContactFirstName = "Dana",
             ContactLastName = "Whitfield",
-            ContactTitle = "Account Manager",
-            ContactDepartment = "Sales",
+            ContactTitle = "0001",       // FormOfAddressCode (Mr.)
+            ContactFunction = "0016",    // BusinessPartnerFunctionTypeCode
+            ContactDepartment = "0002",  // BusinessPartnerFunctionalAreaCode
             ContactEmail = "dana@northstarsupply.com",
             ContactPhone = "(406) 555-0192",
             ContactMobile = "(406) 555-0246",
@@ -104,6 +105,31 @@ public static class SeedData
         new() { Code = "BANKLTR", Description = "Bank Verification Letter", SortOrder = 4 },
         new() { Code = "DIVCERT", Description = "Diversity Certification", SortOrder = 5 },
         new() { Code = "W8BEN", Description = "W-8BEN (foreign vendors)", SortOrder = 6 },
+    };
+
+    /// <summary>
+    /// Initial SAP-coded contact dropdown values (Title / Department / Function). Codes are the
+    /// SAP values; descriptions are starter labels City staff refine in the admin UI. The
+    /// Department "0002" and Function "0016" codes match the live SAP seed contact on supplier 62440.
+    /// </summary>
+    public static List<ContactCode> ContactCodes() => new()
+    {
+        // Title → SAP FormOfAddressCode (salutation). Standard ByDesign codes; verify labels per tenant.
+        new() { Category = ContactCodeCategory.Title, Code = "0001", Description = "Mr.", SortOrder = 1 },
+        new() { Category = ContactCodeCategory.Title, Code = "0002", Description = "Mrs.", SortOrder = 2 },
+        new() { Category = ContactCodeCategory.Title, Code = "0003", Description = "Ms.", SortOrder = 3 },
+        new() { Category = ContactCodeCategory.Title, Code = "0004", Description = "Miss", SortOrder = 4 },
+
+        // Department → SAP BusinessPartnerFunctionalAreaCode. 0002 is set on the SAP seed contact.
+        new() { Category = ContactCodeCategory.Department, Code = "0001", Description = "Corporate Management", SortOrder = 1 },
+        new() { Category = ContactCodeCategory.Department, Code = "0002", Description = "Sales", SortOrder = 2 },
+        new() { Category = ContactCodeCategory.Department, Code = "0003", Description = "Purchasing", SortOrder = 3 },
+        new() { Category = ContactCodeCategory.Department, Code = "0004", Description = "Accounting / Finance", SortOrder = 4 },
+
+        // Function → SAP BusinessPartnerFunctionTypeCode. 0016 is set on the SAP seed contact.
+        new() { Category = ContactCodeCategory.Function, Code = "0001", Description = "Contact Person", SortOrder = 1 },
+        new() { Category = ContactCodeCategory.Function, Code = "0009", Description = "Sales Representative", SortOrder = 2 },
+        new() { Category = ContactCodeCategory.Function, Code = "0016", Description = "Buyer", SortOrder = 3 },
     };
 
     private static Vendor Simple(string number, string pin, string name, string category,

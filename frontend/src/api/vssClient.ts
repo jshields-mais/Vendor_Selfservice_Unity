@@ -37,6 +37,8 @@ export interface Contacts {
 }
 export interface VendorDoc { id: string; name: string; fileRef?: string | null; validity: string; status: string; typeCode?: string | null; }
 export interface DocumentType { id: string; code: string; description: string; isActive: boolean; sortOrder: number; }
+/** A SAP-coded contact dropdown value. Category is "Title" | "Department" | "Function". */
+export interface ContactCode { id: string; category: string; code: string; description: string; isActive: boolean; sortOrder: number; }
 export interface NotificationRecipient { kind: string; email: string; }
 export interface Notification { type: string; recipients: NotificationRecipient[]; }
 export interface NotificationCatalog { types: { name: string; erpEnabled: boolean }[]; }
@@ -85,6 +87,7 @@ export const useMyChangeRequests = (enabled: boolean) =>
 
 export const useDocumentTypes = () => useApiQuery<DocumentType[]>(VSS_BASE, "api/v1/documents/types");
 export const useNotificationCatalog = () => useApiQuery<NotificationCatalog>(VSS_BASE, "api/v1/vendor/notification-catalog");
+export const useContactCodes = () => useApiQuery<ContactCode[]>(VSS_BASE, "api/v1/vendor/contact-codes");
 
 // ------------------------------------------------------------------ Mutations
 export const linkRequests = {

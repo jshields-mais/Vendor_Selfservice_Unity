@@ -291,6 +291,68 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
         return NoContent();
     }
 
+    // ---- Contact code lists (Title / Department / Function — SAP-coded, City-maintained) ----
+    [HttpGet("contact-codes")]
+    public async Task<ActionResult<IEnumerable<ContactCodeDto>>> ContactCodes(CancellationToken ct)
+    {
+        var rows = await db.ContactCodes.OrderBy(c => c.Category).ThenBy(c => c.SortOrder).ThenBy(c => c.Description).ToListAsync(ct);
+        return rows.Select(c => new ContactCodeDto(c.Id, c.Category, c.Code, c.Description, c.IsActive, c.SortOrder)).ToList();
+    }
+
+    [HttpPost("contact-codes")]
+    public async Task<ActionResult<ContactCodeDto>> CreateContactCode(ContactCodeUpsertDto dto, CancellationToken ct)
+    {
+        var (category, code, err) = NormalizeContactCode(dto);
+        if (err is not null) return BadRequest(err);
+        if (await db.ContactCodes.AnyAsync(c => c.Category == category && c.Code == code, ct))
+            return Conflict($"{category} code '{code}' already exists.");
+
+        var c = new ContactCode { Category = category, Code = code, Description = dto.Description.Trim(), IsActive = dto.IsActive, SortOrder = dto.SortOrder };
+        db.ContactCodes.Add(c);
+        await db.SaveChangesAsync(ct);
+        return new ContactCodeDto(c.Id, c.Category, c.Code, c.Description, c.IsActive, c.SortOrder);
+    }
+
+    [HttpPut("contact-codes/{id:guid}")]
+    public async Task<ActionResult<ContactCodeDto>> UpdateContactCode(Guid id, ContactCodeUpsertDto dto, CancellationToken ct)
+    {
+        var c = await db.ContactCodes.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (c is null) return NotFound();
+        var (category, code, err) = NormalizeContactCode(dto);
+        if (err is not null) return BadRequest(err);
+        if (await db.ContactCodes.AnyAsync(x => x.Category == category && x.Code == code && x.Id != id, ct))
+            return Conflict($"{category} code '{code}' already exists.");
+
+        c.Category = category;
+        c.Code = code;
+        c.Description = dto.Description.Trim();
+        c.IsActive = dto.IsActive;
+        c.SortOrder = dto.SortOrder;
+        await db.SaveChangesAsync(ct);
+        return new ContactCodeDto(c.Id, c.Category, c.Code, c.Description, c.IsActive, c.SortOrder);
+    }
+
+    [HttpDelete("contact-codes/{id:guid}")]
+    public async Task<IActionResult> DeleteContactCode(Guid id, CancellationToken ct)
+    {
+        var c = await db.ContactCodes.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (c is null) return NotFound();
+        db.ContactCodes.Remove(c);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    private static (string category, string code, string? error) NormalizeContactCode(ContactCodeUpsertDto dto)
+    {
+        var category = (dto.Category ?? "").Trim();
+        var code = (dto.Code ?? "").Trim();
+        if (!ContactCodeCategory.IsValid(category))
+            return ("", "", $"Category must be one of: {string.Join(", ", ContactCodeCategory.All)}.");
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(dto.Description))
+            return ("", "", "Code and description are required.");
+        return (category, code, null);
+    }
+
     [HttpGet("link-requests")]
     public async Task<ActionResult<IEnumerable<AdminLinkRequestDto>>> LinkRequests(CancellationToken ct)
     {

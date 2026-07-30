@@ -44,6 +44,15 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
         return new NotificationCatalogDto(types);
     }
 
+    /// <summary>Active contact code lists (Title / Department / Function) for the Contacts dropdowns.</summary>
+    [HttpGet("contact-codes")]
+    public async Task<ActionResult<IEnumerable<ContactCodeDto>>> ContactCodes(CancellationToken ct)
+    {
+        var rows = await db.ContactCodes.Where(c => c.IsActive)
+            .OrderBy(c => c.Category).ThenBy(c => c.SortOrder).ThenBy(c => c.Description).ToListAsync(ct);
+        return rows.Select(c => new ContactCodeDto(c.Id, c.Category, c.Code, c.Description, c.IsActive, c.SortOrder)).ToList();
+    }
+
     private async Task RefreshFromErpAsync(Vendor v, CancellationToken ct)
     {
         try
@@ -58,11 +67,14 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
             if (!string.IsNullOrEmpty(e.RoutingNumber)) v.RoutingNumber = e.RoutingNumber;
             if (!string.IsNullOrEmpty(e.AccountNumber)) v.AccountNumber = e.AccountNumber;
 
-            // Contact: the supplier's default ContactPerson (name, title, dept, email/phone/fax).
+            // Contact: the supplier's default ContactPerson (name, title, dept, function, email/phone/fax).
             if (!string.IsNullOrEmpty(e.ContactFirstName)) v.ContactFirstName = e.ContactFirstName;
             if (!string.IsNullOrEmpty(e.ContactLastName)) v.ContactLastName = e.ContactLastName;
-            if (!string.IsNullOrEmpty(e.ContactTitle)) v.ContactTitle = e.ContactTitle;
-            if (!string.IsNullOrEmpty(e.ContactDepartment)) v.ContactDepartment = e.ContactDepartment;
+            // Title / Function / Department are SAP-coded and read atomically with the contact,
+            // so mirror SAP exactly — including clearing a value SAP no longer carries.
+            v.ContactTitle = e.ContactTitle;
+            v.ContactFunction = e.ContactFunction;
+            v.ContactDepartment = e.ContactDepartment;
             if (!string.IsNullOrEmpty(e.ContactEmail)) v.ContactEmail = e.ContactEmail;
             if (!string.IsNullOrEmpty(e.ContactPhone)) v.ContactPhone = e.ContactPhone;
             if (!string.IsNullOrEmpty(e.ContactMobile)) v.ContactMobile = e.ContactMobile;
@@ -93,6 +105,6 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
 
     private static string Snapshot(Vendor v) => string.Join('|',
         v.PaymentMethod, v.RoutingNumber, v.AccountNumber,
-        v.ContactFirstName, v.ContactLastName, v.ContactTitle, v.ContactDepartment, v.ContactEmail, v.ContactPhone, v.ContactMobile, v.ContactFax,
+        v.ContactFirstName, v.ContactLastName, v.ContactTitle, v.ContactFunction, v.ContactDepartment, v.ContactEmail, v.ContactPhone, v.ContactMobile, v.ContactFax,
         v.IsPoBox, v.PoBox, v.HouseNumber, v.RemitStreet, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry);
 }

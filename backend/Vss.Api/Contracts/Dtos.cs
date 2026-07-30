@@ -58,6 +58,10 @@ public record DocumentUploadDto(string TypeCode, string FileName, string Content
 public record DocumentTypeDto(Guid Id, string Code, string Description, bool IsActive, int SortOrder);
 public record DocumentTypeUpsertDto(string Code, string Description, bool IsActive, int SortOrder);
 
+// ---- Contact code lists (configurable, SAP-coded): Title / Department / Function ----
+public record ContactCodeDto(Guid Id, string Category, string Code, string Description, bool IsActive, int SortOrder);
+public record ContactCodeUpsertDto(string Category, string Code, string Description, bool IsActive, int SortOrder);
+
 // ---- Admin ----
 public record AdminLinkRequestDto(Guid Id, string Company, string Email, string Method, string? MatchedVendorNumber, DateTimeOffset CreatedAt, string Status);
 public record AdminVendorDto(string Number, string Name, string Category, DateTimeOffset? LastSync, string Status);

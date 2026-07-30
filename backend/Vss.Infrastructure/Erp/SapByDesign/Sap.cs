@@ -186,12 +186,16 @@ internal static class Sap
         var cp = new XElement("ContactPerson", new XAttribute("actionCode", "04"));
         void Add(string el, string? val) { if (val is not null) cp.Add(new XElement(el, val)); }
 
-        // schema order: UUID, InternalID, ... GivenName, FamilyName, ... WorkplaceEMailURI,
-        // WorkplaceFacsimile..., WorkplaceTelephone*, WorkplaceFunctionalTitleName, WorkplaceDepartmentName
+        // schema order: UUID, InternalID, FormOfAddressCode, GivenName, FamilyName,
+        // BusinessPartnerFunctionTypeCode, BusinessPartnerFunctionalAreaCode, WorkplaceEMailURI,
+        // WorkplaceFacsimile..., WorkplaceTelephone*. Title/Function/Department are coded (see SapContact).
         if (!string.IsNullOrEmpty(c.Uuid)) cp.Add(new XElement("BusinessPartnerContactUUID", c.Uuid));
         if (!string.IsNullOrEmpty(c.InternalId)) cp.Add(new XElement("BusinessPartnerContactInternalID", c.InternalId));
+        Add("FormOfAddressCode", c.FormOfAddressCode);
         Add("GivenName", c.FirstName);
         Add("FamilyName", c.LastName);
+        Add("BusinessPartnerFunctionTypeCode", c.FunctionCode);
+        Add("BusinessPartnerFunctionalAreaCode", c.DepartmentCode);
         Add("WorkplaceEMailURI", c.Email);
         Add("WorkplaceFacsimileFormattedNumberDescription", c.Fax);
         if (c.Phone is not null || c.Mobile is not null)
@@ -202,8 +206,6 @@ internal static class Sap
             if (!string.IsNullOrEmpty(c.Mobile))
                 cp.Add(new XElement("WorkplaceTelephone", new XElement("FormattedNumberDescription", c.Mobile), new XElement("MobilePhoneNumberIndicator", "true")));
         }
-        Add("WorkplaceFunctionalTitleName", c.Title);
-        Add("WorkplaceDepartmentName", c.Department);
 
         var supplier = new XElement("Supplier",
             new XAttribute("actionCode", "04"),
@@ -260,8 +262,12 @@ public sealed class SapContact
     public string? InternalId { get; init; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
-    public string? Title { get; init; }
-    public string? Department { get; init; }
+    /// <summary>Title → SAP FormOfAddressCode (coded salutation).</summary>
+    public string? FormOfAddressCode { get; init; }
+    /// <summary>Function → SAP BusinessPartnerFunctionTypeCode (coded).</summary>
+    public string? FunctionCode { get; init; }
+    /// <summary>Department → SAP BusinessPartnerFunctionalAreaCode (coded).</summary>
+    public string? DepartmentCode { get; init; }
     public string? Email { get; init; }
     public string? Phone { get; init; }
     public string? Mobile { get; init; }

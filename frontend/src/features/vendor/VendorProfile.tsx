@@ -2,13 +2,15 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
-import { Button, Card, Label, TextField, SelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
+import { Button, Card, Label, TextField, SelectField, CodeSelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, useNotificationCatalog, changeRequests, documents, qk, type Vendor, type ChangeDiff } from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, useNotificationCatalog, useContactCodes, changeRequests, documents, qk, type Vendor, type ChangeDiff, type ContactCode } from "../../api/vssClient";
 
-type Kind = "text" | "select" | "readonly";
+type Kind = "text" | "select" | "codeselect" | "readonly";
 interface FieldDef {
   key: string; label: string; value: string; kind: Kind; options?: string[]; full?: boolean;
+  /** For kind "codeselect": the {code,label} options (value stored is the SAP code). */
+  codeOptions?: { value: string; label: string }[];
   /** Optional: field is shown only when this returns true for the current edited values. */
   showWhen?: (values: Record<string, string>) => boolean;
   /** Optional: value must be non-empty to submit the section. */
@@ -29,7 +31,16 @@ const t = (key: string, label: string, value?: string | null, full = false): Fie
 const sel = (key: string, label: string, value: string | null | undefined, options: string[]): FieldDef => ({ key, label, value: value ?? "", kind: "select", options });
 const ro = (key: string, label: string, value?: string | null): FieldDef => ({ key, label, value: value ?? "", kind: "readonly" });
 
-function fieldsFor(tab: string, v: Vendor): FieldDef[] {
+/** A SAP-coded dropdown: value stored is the code, label is the config-table description. */
+const codeSel = (key: string, label: string, value: string | null | undefined, category: string, codes: ContactCode[]): FieldDef => {
+  const opts = codes.filter((c) => c.category === category).map((c) => ({ value: c.code, label: c.description }));
+  const cur = value ?? "";
+  // If the current code isn't in the active list (deactivated/unknown), keep it selectable.
+  if (cur && !opts.some((o) => o.value === cur)) opts.unshift({ value: cur, label: `${cur} (inactive)` });
+  return { key, label, value: cur, kind: "codeselect", codeOptions: [{ value: "", label: "— None —" }, ...opts] };
+};
+
+function fieldsFor(tab: string, v: Vendor, contactCodes: ContactCode[] = []): FieldDef[] {
   switch (tab) {
     case "company": return [
       t("LegalName", "Legal business name", v.legalName, true),
@@ -42,9 +53,9 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
     case "contacts": return [
       { ...t("ContactFirstName", "First name", v.contacts.firstName), required: true },
       { ...t("ContactLastName", "Last name", v.contacts.lastName), required: true },
-      t("ContactTitle", "Title", v.contacts.title),
-      t("ContactFunction", "Function", v.contacts.function),
-      t("ContactDepartment", "Department", v.contacts.department),
+      codeSel("ContactTitle", "Title", v.contacts.title, "Title", contactCodes),
+      codeSel("ContactFunction", "Function", v.contacts.function, "Function", contactCodes),
+      codeSel("ContactDepartment", "Department", v.contacts.department, "Department", contactCodes),
       t("ContactEmail", "Email", v.contacts.email),
       t("ContactPhone", "Phone", v.contacts.phone),
       t("ContactMobile", "Mobile", v.contacts.mobile),
@@ -137,7 +148,8 @@ export function VendorProfile() {
 
 function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendor: Vendor; section: string; onSubmitted: () => void }) {
   const nav = useNavigate();
-  const fields = useMemo(() => fieldsFor(tab, vendor), [tab, vendor]);
+  const { data: contactCodes } = useContactCodes();
+  const fields = useMemo(() => fieldsFor(tab, vendor, contactCodes ?? []), [tab, vendor, contactCodes]);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, f.value])));
 
   // Fields whose showWhen predicate passes for the current values (e.g. bank details
@@ -162,7 +174,13 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
           <div key={f.key} style={f.full ? { gridColumn: "span 2" } : undefined}>
             <Label>{f.label}{f.required ? " *" : ""}</Label>
             {f.kind === "readonly" ? <ReadonlyField value={f.value} />
-              : f.kind === "select" ? (
+              : f.kind === "codeselect" ? (
+                <CodeSelectField
+                  options={f.codeOptions!}
+                  value={values[f.key]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                />
+              ) : f.kind === "select" ? (
                 <SelectField
                   options={f.options!.includes(values[f.key]) ? f.options! : [values[f.key], ...f.options!]}
                   value={values[f.key]}

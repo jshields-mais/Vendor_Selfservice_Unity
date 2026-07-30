@@ -18,6 +18,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
     public DbSet<ErpConfig> ErpConfigs => Set<ErpConfig>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
+    public DbSet<ContactCode> ContactCodes => Set<ContactCode>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -56,5 +57,8 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
         });
 
         b.Entity<DocumentType>(e => e.HasIndex(t => t.Code).IsUnique());
+
+        // One code is unique within its list (the same code may recur across categories).
+        b.Entity<ContactCode>(e => e.HasIndex(c => new { c.Category, c.Code }).IsUnique());
     }
 }

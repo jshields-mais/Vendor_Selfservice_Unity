@@ -49,14 +49,15 @@ public class SapByDesignErpClient : IErpClient
     private static readonly string[] BankingFields = { "RoutingNumber", "AccountNumber" };
 
     private static readonly string[] ContactFields =
-        { "ContactFirstName", "ContactLastName", "ContactTitle", "ContactDepartment", "ContactEmail", "ContactPhone", "ContactMobile", "ContactFax" };
+        { "ContactFirstName", "ContactLastName", "ContactTitle", "ContactFunction", "ContactDepartment",
+          "ContactEmail", "ContactPhone", "ContactMobile", "ContactFax" };
 
     public async Task UpdateVendorMasterAsync(string vendorNumber, VendorMasterPatch patch, CancellationToken ct = default)
     {
         var fields = new Dictionary<string, string?>(patch.Fields);
 
         // Contact edits update the supplier's default ContactPerson in place (read its key,
-        // merge changes over current, write). ContactFunction is portal-only (SAP function is coded).
+        // merge changes over current, write). Title/Function/Department are SAP-coded values.
         if (ContactFields.Any(fields.ContainsKey))
         {
             var q = await PostAsync(_opt.QuerySupplierPath, Sap.QueryAction, Sap.BuildQueryByInternalId(vendorNumber), ct);
@@ -72,8 +73,9 @@ public class SapByDesignErpClient : IErpClient
                 InternalId = K("BusinessPartnerContactInternalID"),
                 FirstName = V("ContactFirstName", current?.ContactFirstName),
                 LastName = V("ContactLastName", current?.ContactLastName),
-                Title = V("ContactTitle", current?.ContactTitle),
-                Department = V("ContactDepartment", current?.ContactDepartment),
+                FormOfAddressCode = V("ContactTitle", current?.ContactTitle),
+                FunctionCode = V("ContactFunction", current?.ContactFunction),
+                DepartmentCode = V("ContactDepartment", current?.ContactDepartment),
                 Email = V("ContactEmail", current?.ContactEmail),
                 Phone = V("ContactPhone", current?.ContactPhone),
                 Mobile = V("ContactMobile", current?.ContactMobile),
@@ -330,8 +332,11 @@ public class SapByDesignErpClient : IErpClient
             string? C(string n) => contact.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
             dto.ContactFirstName = TitleCaseOrNull(C("GivenName"));
             dto.ContactLastName = TitleCaseOrNull(C("FamilyName"));
-            dto.ContactTitle = C("WorkplaceFunctionalTitleName");
-            dto.ContactDepartment = C("WorkplaceDepartmentName");
+            // Title / Function / Department are SAP-coded dropdowns — carry the codes (the
+            // portal resolves them to labels via the ContactCode config tables).
+            dto.ContactTitle = C("FormOfAddressCode");
+            dto.ContactFunction = C("BusinessPartnerFunctionTypeCode");
+            dto.ContactDepartment = C("BusinessPartnerFunctionalAreaCode");
             dto.ContactEmail = C("WorkplaceEMailURI");
             dto.ContactFax = C("WorkplaceFacsimileFormattedNumberDescription");
             foreach (var tel in contact.Elements().Where(e => e.Name.LocalName == "WorkplaceTelephone"))
