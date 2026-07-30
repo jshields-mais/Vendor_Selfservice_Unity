@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -172,6 +173,45 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
 
             // Drop notifications left with no recipients (after the SAP push has read them).
             foreach (var n in notifs.Where(n => n.Recipients.Count == 0).ToList()) { db.Notifications.Remove(n); notifs.Remove(n); }
+            cr.Vendor.LastSyncedAt = approvedAt;
+        }
+        else if (cr.Section == "Contacts")
+        {
+            // Each diff is one contact operation. field = "contact:<key>" where key is the VSS
+            // contact Id (edit/delete) or "new" (add); toValue = JSON of the contact, or empty = delete.
+            var contacts = await db.Contacts.Where(c => c.VendorId == cr.Vendor.Id).ToListAsync(ct);
+            foreach (var d in cr.Diffs)
+            {
+                if (!d.Field.StartsWith("contact:", StringComparison.OrdinalIgnoreCase)) continue;
+                var key = d.Field["contact:".Length..];
+                var existing = contacts.FirstOrDefault(c => c.Id.ToString() == key);
+
+                // Delete: no payload on an existing contact → remove from SAP + portal.
+                if (existing is not null && string.IsNullOrWhiteSpace(d.ToValue))
+                {
+                    await erp.DeleteContactAsync(cr.Vendor.Number, existing.SapUuid, existing.SapInternalId, ct);
+                    db.Contacts.Remove(existing);
+                    continue;
+                }
+
+                var p = JsonSerializer.Deserialize<ContactPayloadDto>(d.ToValue ?? "{}",
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ContactPayloadDto(null, null, null, null, null, null, null, null, null);
+                var target = existing ?? new Contact { VendorId = cr.Vendor.Id, SortOrder = contacts.Count };
+                target.FirstName = p.FirstName; target.LastName = p.LastName;
+                target.Title = p.Title; target.Function = p.Function; target.Department = p.Department;
+                target.Email = p.Email; target.Phone = p.Phone; target.Mobile = p.Mobile; target.Fax = p.Fax;
+
+                var res = await erp.UpsertContactAsync(cr.Vendor.Number, new ErpContact
+                {
+                    SapUuid = target.SapUuid, SapInternalId = target.SapInternalId, IsPrimary = target.IsPrimary,
+                    FirstName = target.FirstName, LastName = target.LastName, Title = target.Title,
+                    Function = target.Function, Department = target.Department, Email = target.Email,
+                    Phone = target.Phone, Mobile = target.Mobile, Fax = target.Fax,
+                }, ct);
+                target.SapUuid = res.SapUuid ?? target.SapUuid;
+                target.SapInternalId = res.SapInternalId ?? target.SapInternalId;
+                if (existing is null) { db.Contacts.Add(target); contacts.Add(target); }
+            }
             cr.Vendor.LastSyncedAt = approvedAt;
         }
         else

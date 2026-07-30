@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "../../layout/AppShell";
 import { Button, Card, Label, TextField, SelectField, CodeSelectField, ReadonlyField, StatusPill, Spinner, Banner } from "../../ui";
 import {
-  useMe, useVendor, useDocumentTypes, useNotificationCatalog, useContactCodes, changeRequests, documents, qk, type Vendor, type ChangeDiff, type ContactCode } from "../../api/vssClient";
+  useMe, useVendor, useDocumentTypes, useNotificationCatalog, useContactCodes, changeRequests, documents, qk, type Vendor, type ChangeDiff, type ContactCode, type Contact } from "../../api/vssClient";
 
 type Kind = "text" | "select" | "codeselect" | "readonly";
 interface FieldDef {
@@ -31,16 +31,7 @@ const t = (key: string, label: string, value?: string | null, full = false): Fie
 const sel = (key: string, label: string, value: string | null | undefined, options: string[]): FieldDef => ({ key, label, value: value ?? "", kind: "select", options });
 const ro = (key: string, label: string, value?: string | null): FieldDef => ({ key, label, value: value ?? "", kind: "readonly" });
 
-/** A SAP-coded dropdown: value stored is the code, label is the config-table description. */
-const codeSel = (key: string, label: string, value: string | null | undefined, category: string, codes: ContactCode[]): FieldDef => {
-  const opts = codes.filter((c) => c.category === category).map((c) => ({ value: c.code, label: c.description }));
-  const cur = value ?? "";
-  // If the current code isn't in the active list (deactivated/unknown), keep it selectable.
-  if (cur && !opts.some((o) => o.value === cur)) opts.unshift({ value: cur, label: `${cur} (inactive)` });
-  return { key, label, value: cur, kind: "codeselect", codeOptions: [{ value: "", label: "— None —" }, ...opts] };
-};
-
-function fieldsFor(tab: string, v: Vendor, contactCodes: ContactCode[] = []): FieldDef[] {
+function fieldsFor(tab: string, v: Vendor): FieldDef[] {
   switch (tab) {
     case "company": return [
       t("LegalName", "Legal business name", v.legalName, true),
@@ -49,17 +40,6 @@ function fieldsFor(tab: string, v: Vendor, contactCodes: ContactCode[] = []): Fi
       t("Website", "Website", v.website),
       ro("Number", "Vendor number", v.number),
       ro("Status", "Portal status", `Linked · ${v.status}`),
-    ];
-    case "contacts": return [
-      { ...t("ContactFirstName", "First name", v.contacts.firstName), required: true },
-      { ...t("ContactLastName", "Last name", v.contacts.lastName), required: true },
-      codeSel("ContactTitle", "Title", v.contacts.title, "Title", contactCodes),
-      codeSel("ContactFunction", "Function", v.contacts.function, "Function", contactCodes),
-      codeSel("ContactDepartment", "Department", v.contacts.department, "Department", contactCodes),
-      t("ContactEmail", "Email", v.contacts.email),
-      t("ContactPhone", "Phone", v.contacts.phone),
-      t("ContactMobile", "Mobile", v.contacts.mobile),
-      t("ContactFax", "Fax", v.contacts.fax),
     ];
     case "addresses": {
       // PO Box rule: a PO Box address shows the box number; a street address shows the
@@ -131,6 +111,7 @@ export function VendorProfile() {
           {tab === "documents" ? <DocumentsPanel vendor={vendor} />
             : tab === "categories" ? <CategoriesPanel vendor={vendor} />
             : tab === "notifications" ? <NotificationsPanel vendor={vendor} onSubmitted={() => nav("/submitted")} />
+            : tab === "contacts" ? <ContactsPanel vendor={vendor} onSubmitted={() => nav("/submitted")} />
             : <FieldEditor key={tab} tab={tab} vendor={vendor} section={meta.section}
                 onSubmitted={async () => {
                   await Promise.all([
@@ -148,8 +129,7 @@ export function VendorProfile() {
 
 function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendor: Vendor; section: string; onSubmitted: () => void }) {
   const nav = useNavigate();
-  const { data: contactCodes } = useContactCodes();
-  const fields = useMemo(() => fieldsFor(tab, vendor, contactCodes ?? []), [tab, vendor, contactCodes]);
+  const fields = useMemo(() => fieldsFor(tab, vendor), [tab, vendor]);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, f.value])));
 
   // Fields whose showWhen predicate passes for the current values (e.g. bank details
@@ -390,6 +370,140 @@ function NotificationsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitt
         <Button variant="primary" disabled={diffs.length === 0 || invalid.length > 0 || submit.isPending} onClick={() => submit.mutate()}>
           {submit.isPending ? "Submitting…" : "Submit notifications for review"}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Contacts: a grid of the vendor's contacts + a side-sheet editor. Add/edit/delete each
+ *  submit a change request; on approval the matching SAP ContactPerson is created/updated/deleted. */
+function ContactsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitted: () => void }) {
+  const { data: codes } = useContactCodes();
+  const [editing, setEditing] = useState<Contact | "new" | null>(null);
+
+  const label = (category: string, code?: string | null) =>
+    (code ? codes?.find((c) => c.category === category && c.code === code)?.description ?? code : "");
+
+  const contactPhone = (c: Contact) => c.phone || c.mobile || "";
+
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ padding: "12px 24px 4px", display: "flex", justifyContent: "flex-end" }}>
+        <Button variant="primary" onClick={() => setEditing("new")}>+ Add contact</Button>
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr style={{ background: "var(--bg-2)" }}>
+          {["Name", "Department", "Email / Phone", ""].map((h) => (
+            <th key={h} style={{ padding: "10px 24px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", borderBottom: "1px solid var(--border-1)" }}>{h}</th>
+          ))}
+        </tr></thead>
+        <tbody>
+          {vendor.contacts.length === 0 && (
+            <tr><td colSpan={4} style={{ padding: "18px 24px", fontSize: 13, color: "var(--fg-3)" }}>No contacts yet. Add one to get started.</td></tr>
+          )}
+          {vendor.contacts.map((c) => (
+            <tr key={c.id} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)", cursor: "pointer" }} onClick={() => setEditing(c)}>
+              <td style={{ padding: "12px 24px", fontSize: 13, color: "var(--fg-1)" }}>
+                <span style={{ fontWeight: 600 }}>{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</span>
+                {c.isPrimary && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: "var(--colorBrandForeground2)", background: "var(--colorBrandBackground2)", padding: "1px 7px", borderRadius: 999 }}>Primary</span>}
+                {label("Function", c.function) && <div style={{ fontSize: 12, color: "var(--fg-3)" }}>{label("Function", c.function)}</div>}
+              </td>
+              <td style={{ padding: "12px 24px", fontSize: 13, color: "var(--fg-1)" }}>{label("Department", c.department) || "—"}</td>
+              <td style={{ padding: "12px 24px", fontSize: 13, color: "var(--fg-1)" }}>
+                <div>{c.email || "—"}</div>
+                {contactPhone(c) && <div style={{ fontSize: 12, color: "var(--fg-3)" }}>{contactPhone(c)}</div>}
+              </td>
+              <td style={{ padding: "12px 24px", textAlign: "right", color: "var(--fg-3)", fontSize: 12 }}>Edit ›</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {editing && (
+        <ContactSideSheet
+          contact={editing === "new" ? null : editing}
+          codes={codes ?? []}
+          onClose={() => setEditing(null)}
+          onSubmitted={onSubmitted}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContactSideSheet({ contact, codes, onClose, onSubmitted }:
+  { contact: Contact | null; codes: ContactCode[]; onClose: () => void; onSubmitted: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({
+    firstName: contact?.firstName ?? "", lastName: contact?.lastName ?? "",
+    title: contact?.title ?? "", function: contact?.function ?? "", department: contact?.department ?? "",
+    email: contact?.email ?? "", phone: contact?.phone ?? "", mobile: contact?.mobile ?? "", fax: contact?.fax ?? "",
+  });
+  const set = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
+
+  const codeOpts = (category: string, cur: string) => {
+    const opts = codes.filter((c) => c.category === category).map((c) => ({ value: c.code, label: c.description }));
+    if (cur && !opts.some((o) => o.value === cur)) opts.unshift({ value: cur, label: `${cur} (inactive)` });
+    return [{ value: "", label: "— None —" }, ...opts];
+  };
+
+  const missing = !f.firstName.trim() || !f.lastName.trim();
+  const key = contact ? `contact:${contact.id}` : "contact:new";
+  const payload = JSON.stringify(f);
+
+  const save = useMutation({
+    mutationFn: () => changeRequests.create({ section: "Contacts", diffs: [{ field: key, fromValue: contact ? "(existing)" : "", toValue: payload }] }),
+    onSuccess: async () => { await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]); onSubmitted(); },
+  });
+  const remove = useMutation({
+    mutationFn: () => changeRequests.create({ section: "Contacts", diffs: [{ field: key, fromValue: "(existing)", toValue: "" }] }),
+    onSuccess: async () => { await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]); onSubmitted(); },
+  });
+  const busy = save.isPending || remove.isPending;
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.32)", zIndex: 50, display: "flex", justifyContent: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 460, maxWidth: "100%", height: "100%", background: "var(--colorNeutralBackground1)", boxShadow: "-8px 0 24px rgba(0,0,0,.18)", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border-1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>{contact ? "Edit contact" : "Add contact"}</div>
+          <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", fontSize: 20, cursor: "pointer", color: "var(--fg-3)" }}>×</button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 18px" }}>
+          {/* Title on its own row */}
+          <div style={{ gridColumn: "span 2" }}>
+            <Label>Title</Label>
+            <CodeSelectField options={codeOpts("Title", f.title)} value={f.title} onChange={(e) => set("title", e.target.value)} />
+          </div>
+          {/* First + last name on the row below */}
+          <div><Label>First name *</Label><TextField value={f.firstName} onChange={(e) => set("firstName", e.target.value)} /></div>
+          <div><Label>Last name *</Label><TextField value={f.lastName} onChange={(e) => set("lastName", e.target.value)} /></div>
+          {/* Other fields organized below */}
+          <div><Label>Function</Label><CodeSelectField options={codeOpts("Function", f.function)} value={f.function} onChange={(e) => set("function", e.target.value)} /></div>
+          <div><Label>Department</Label><CodeSelectField options={codeOpts("Department", f.department)} value={f.department} onChange={(e) => set("department", e.target.value)} /></div>
+          <div><Label>Email</Label><TextField value={f.email} onChange={(e) => set("email", e.target.value)} /></div>
+          <div><Label>Phone</Label><TextField value={f.phone} onChange={(e) => set("phone", e.target.value)} /></div>
+          <div><Label>Mobile</Label><TextField value={f.mobile} onChange={(e) => set("mobile", e.target.value)} /></div>
+          <div><Label>Fax</Label><TextField value={f.fax} onChange={(e) => set("fax", e.target.value)} /></div>
+        </div>
+
+        <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border-1)", background: "var(--bg-2)" }}>
+          <div style={{ fontSize: 12, color: missing ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)", marginBottom: 10 }}>
+            {missing ? "First and last name are required." : "Changes are reviewed by City staff before syncing to the ERP."}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <div>
+              {contact && <Button variant="danger" disabled={busy} onClick={() => { if (confirm("Submit removal of this contact for review?")) remove.mutate(); }}>
+                {remove.isPending ? "Submitting…" : "Delete"}</Button>}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button variant="primary" disabled={missing || busy} onClick={() => save.mutate()}>
+                {save.isPending ? "Submitting…" : "Submit for review"}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -75,6 +75,20 @@ public class StubErpClient : IErpClient
         return Task.FromResult(prefs.Count);
     }
 
+    public Task<ErpContactResult> UpsertContactAsync(string vendorNumber, ErpContact contact, CancellationToken ct = default)
+    {
+        // Stub: echo back the keys, minting a fake UUID for a new contact.
+        var uuid = string.IsNullOrEmpty(contact.SapUuid) ? $"stub-{Guid.NewGuid():N}" : contact.SapUuid;
+        _logger.LogInformation("[ERP stub] upsert contact {First} {Last} for vendor {Number}", contact.FirstName, contact.LastName, vendorNumber);
+        return Task.FromResult(new ErpContactResult(uuid, contact.SapInternalId));
+    }
+
+    public Task DeleteContactAsync(string vendorNumber, string? sapUuid, string? sapInternalId, CancellationToken ct = default)
+    {
+        _logger.LogInformation("[ERP stub] delete contact {Uuid} for vendor {Number}", sapUuid ?? sapInternalId, vendorNumber);
+        return Task.CompletedTask;
+    }
+
     private static string Norm(string? s) => (s ?? string.Empty).Trim().ToUpperInvariant();
 
     private static ErpVendorDto ToDto(Vendor v) => new()
@@ -101,15 +115,12 @@ public class StubErpClient : IErpClient
         TaxIdType = v.TaxIdType,
         Tin = v.Tin,
         TaxClassification = v.TaxClassification,
-        ContactFirstName = v.ContactFirstName,
-        ContactLastName = v.ContactLastName,
-        ContactTitle = v.ContactTitle,
-        ContactFunction = v.ContactFunction,
-        ContactDepartment = v.ContactDepartment,
-        ContactEmail = v.ContactEmail,
-        ContactPhone = v.ContactPhone,
-        ContactMobile = v.ContactMobile,
-        ContactFax = v.ContactFax,
+        Contacts = v.Contacts.OrderBy(c => c.SortOrder).Select(c => new ErpContact
+        {
+            SapUuid = c.SapUuid, SapInternalId = c.SapInternalId, IsPrimary = c.IsPrimary,
+            FirstName = c.FirstName, LastName = c.LastName, Title = c.Title, Function = c.Function,
+            Department = c.Department, Email = c.Email, Phone = c.Phone, Mobile = c.Mobile, Fax = c.Fax,
+        }).ToList(),
         PrimaryEmail = v.PrimaryEmail,
         PrimaryPhone = v.PrimaryPhone,
         Category = v.CategoryCodes.FirstOrDefault()?.Code ?? string.Empty,

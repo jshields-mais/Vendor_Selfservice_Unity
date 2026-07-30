@@ -62,14 +62,15 @@ public static class SeedData
             TaxClassification = "S-Corporation",
             ExemptPayee = "No",
             W9OnFile = "Signed 02/14/2026",
-            ContactFirstName = "Dana",
-            ContactLastName = "Whitfield",
-            ContactTitle = "0001",       // FormOfAddressCode (Mr.)
-            ContactFunction = "0016",    // BusinessPartnerFunctionTypeCode
-            ContactDepartment = "0002",  // BusinessPartnerFunctionalAreaCode
-            ContactEmail = "dana@northstarsupply.com",
-            ContactPhone = "(406) 555-0192",
-            ContactMobile = "(406) 555-0246",
+            Contacts = new()
+            {
+                new() { IsPrimary = true, SortOrder = 0, FirstName = "Dana", LastName = "Whitfield",
+                    Title = "0001", Function = "0016", Department = "0002",
+                    Email = "dana@northstarsupply.com", Phone = "(406) 555-0192", Mobile = "(406) 555-0246" },
+                new() { IsPrimary = false, SortOrder = 1, FirstName = "Marcus", LastName = "Reyes",
+                    Title = "0001", Function = "0009", Department = "0004",
+                    Email = "ar@northstarsupply.com", Phone = "(406) 555-0177" },
+            },
             PrimaryEmail = "dana@northstarsupply.com",
             PrimaryPhone = "(406) 555-0192",
             LastSyncedAt = DateTimeOffset.UtcNow.AddMinutes(-6),

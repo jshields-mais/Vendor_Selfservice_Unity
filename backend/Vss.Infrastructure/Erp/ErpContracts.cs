@@ -32,16 +32,8 @@ public class ErpVendorDto
     public string? Tin { get; set; }
     public string? TaxClassification { get; set; }
 
-    // Primary contact (SAP default ContactPerson)
-    public string? ContactFirstName { get; set; }
-    public string? ContactLastName { get; set; }
-    public string? ContactTitle { get; set; }
-    public string? ContactFunction { get; set; }
-    public string? ContactDepartment { get; set; }
-    public string? ContactEmail { get; set; }
-    public string? ContactPhone { get; set; }
-    public string? ContactMobile { get; set; }
-    public string? ContactFax { get; set; }
+    // Contacts (each a SAP ContactPerson on the supplier)
+    public List<ErpContact> Contacts { get; set; } = new();
 
     // Supplier-level address email/phone (not the contact)
     public string? PrimaryEmail { get; set; }
@@ -80,6 +72,26 @@ public class ErpAttachment
     public byte[] Content { get; set; } = Array.Empty<byte>();
 }
 
+/// <summary>One supplier contact = a SAP ContactPerson. Keys are null for a not-yet-created contact.</summary>
+public class ErpContact
+{
+    public string? SapUuid { get; set; }
+    public string? SapInternalId { get; set; }
+    public bool IsPrimary { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Title { get; set; }       // FormOfAddressCode
+    public string? Function { get; set; }     // BusinessPartnerFunctionTypeCode
+    public string? Department { get; set; }   // BusinessPartnerFunctionalAreaCode
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Mobile { get; set; }
+    public string? Fax { get; set; }
+}
+
+/// <summary>Keys returned after creating/updating a contact in the ERP.</summary>
+public record ErpContactResult(string? SapUuid, string? SapInternalId);
+
 /// <summary>A supplier's preferred delivery channel for one business document.</summary>
 public class ErpCommunicationPreference
 {
@@ -108,4 +120,11 @@ public interface IErpClient
     /// <summary>Writes the supplier's per-document delivery preferences. Returns the number
     /// of preferences pushed to the ERP (0 if the provider/document isn't ERP-enabled).</summary>
     Task<int> UpdateCommunicationPreferencesAsync(string vendorNumber, IReadOnlyList<ErpCommunicationPreference> preferences, CancellationToken ct = default);
+
+    /// <summary>Creates (no keys) or updates (with SapUuid) a supplier ContactPerson.
+    /// Returns the SAP record keys so a newly created contact can be tracked.</summary>
+    Task<ErpContactResult> UpsertContactAsync(string vendorNumber, ErpContact contact, CancellationToken ct = default);
+
+    /// <summary>Deletes a supplier ContactPerson identified by its SAP keys.</summary>
+    Task DeleteContactAsync(string vendorNumber, string? sapUuid, string? sapInternalId, CancellationToken ct = default);
 }

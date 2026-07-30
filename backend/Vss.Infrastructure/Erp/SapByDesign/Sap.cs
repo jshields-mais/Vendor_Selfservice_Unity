@@ -177,14 +177,26 @@ internal static class Sap
     }
 
     /// <summary>
-    /// Builds a MaintainBundle updating the supplier's default ContactPerson in place. Names
-    /// map to GivenName/FamilyName; title/department/email/fax/phone/mobile to the Workplace*
-    /// fields. Phone+mobile are sent as a complete WorkplaceTelephone list (LCTI).
+    /// Builds a MaintainBundle for a supplier ContactPerson. <paramref name="actionCode"/> is
+    /// "01" to create (no keys), "04" to update in place (keys required), "03" to delete.
+    /// Names map to GivenName/FamilyName; title/function/department to coded fields;
+    /// email/fax/phone/mobile to the Workplace* fields (phone+mobile as a complete list, LCTI).
     /// </summary>
-    public static string BuildContactPerson(string internalId, SapContact c)
+    public static string BuildContactPerson(string internalId, SapContact c, string actionCode = "04")
     {
-        var cp = new XElement("ContactPerson", new XAttribute("actionCode", "04"));
+        var cp = new XElement("ContactPerson", new XAttribute("actionCode", actionCode));
         void Add(string el, string? val) { if (val is not null) cp.Add(new XElement(el, val)); }
+
+        // Delete needs only the record key.
+        if (actionCode == "03")
+        {
+            if (!string.IsNullOrEmpty(c.Uuid)) cp.Add(new XElement("BusinessPartnerContactUUID", c.Uuid));
+            if (!string.IsNullOrEmpty(c.InternalId)) cp.Add(new XElement("BusinessPartnerContactInternalID", c.InternalId));
+            var delSup = new XElement("Supplier", new XAttribute("actionCode", "04"),
+                new XElement("InternalID", internalId), cp);
+            return Envelope(new XElement(Glob + "SupplierBundleMaintainRequest_sync_V1",
+                new XElement("BasicMessageHeader"), delSup));
+        }
 
         // schema order: UUID, InternalID, FormOfAddressCode, GivenName, FamilyName,
         // BusinessPartnerFunctionTypeCode, BusinessPartnerFunctionalAreaCode, WorkplaceEMailURI,

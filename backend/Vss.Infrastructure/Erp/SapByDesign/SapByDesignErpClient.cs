@@ -48,46 +48,9 @@ public class SapByDesignErpClient : IErpClient
           "AddressType", "PoBox", "PrimaryEmail", "PrimaryPhone" };
     private static readonly string[] BankingFields = { "RoutingNumber", "AccountNumber" };
 
-    private static readonly string[] ContactFields =
-        { "ContactFirstName", "ContactLastName", "ContactTitle", "ContactFunction", "ContactDepartment",
-          "ContactEmail", "ContactPhone", "ContactMobile", "ContactFax" };
-
     public async Task UpdateVendorMasterAsync(string vendorNumber, VendorMasterPatch patch, CancellationToken ct = default)
     {
         var fields = new Dictionary<string, string?>(patch.Fields);
-
-        // Contact edits update the supplier's default ContactPerson in place (read its key,
-        // merge changes over current, write). Title/Function/Department are SAP-coded values.
-        if (ContactFields.Any(fields.ContainsKey))
-        {
-            var q = await PostAsync(_opt.QuerySupplierPath, Sap.QueryAction, Sap.BuildQueryByInternalId(vendorNumber), ct);
-            var supplier = q.Descendants().FirstOrDefault(e => e.Name.LocalName == "Supplier");
-            var contactEl = supplier is null ? null : FindDefaultContact(supplier);
-            string? K(string n) => contactEl?.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
-            var current = ParseSupplier(q);
-            string? V(string field, string? cur) => fields.TryGetValue(field, out var v) ? v : cur;
-
-            var contact = new SapContact
-            {
-                Uuid = K("BusinessPartnerContactUUID"),
-                InternalId = K("BusinessPartnerContactInternalID"),
-                FirstName = V("ContactFirstName", current?.ContactFirstName),
-                LastName = V("ContactLastName", current?.ContactLastName),
-                FormOfAddressCode = V("ContactTitle", current?.ContactTitle),
-                FunctionCode = V("ContactFunction", current?.ContactFunction),
-                DepartmentCode = V("ContactDepartment", current?.ContactDepartment),
-                Email = V("ContactEmail", current?.ContactEmail),
-                Phone = V("ContactPhone", current?.ContactPhone),
-                Mobile = V("ContactMobile", current?.ContactMobile),
-                Fax = V("ContactFax", current?.ContactFax),
-            };
-            var cdoc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction, Sap.BuildContactPerson(vendorNumber, contact), ct);
-            if (Local(cdoc.Root, "MaximumLogItemSeverityCode") == "3")
-                throw new InvalidOperationException(
-                    $"SAP ByDesign contact update for {vendorNumber} failed: {Local(cdoc.Root, "Note") ?? "unknown error"}");
-            _log.LogInformation("[SAP ByD] ContactPerson updated on supplier {Number}", vendorNumber);
-            return;
-        }
 
         var ctx = new SapMaintainContext();
         var needsAddress = AddressFields.Any(fields.ContainsKey);
@@ -179,6 +142,66 @@ public class SapByDesignErpClient : IErpClient
 
         _log.LogInformation("[SAP ByD] {Count} communication arrangement(s) set on supplier {Number}", arrangements.Count, vendorNumber);
         return arrangements.Count;
+    }
+
+    private static SapContact ToSapContact(ErpContact c) => new()
+    {
+        Uuid = c.SapUuid,
+        InternalId = c.SapInternalId,
+        FirstName = c.FirstName,
+        LastName = c.LastName,
+        FormOfAddressCode = c.Title,
+        FunctionCode = c.Function,
+        DepartmentCode = c.Department,
+        Email = c.Email,
+        Phone = c.Phone,
+        Mobile = c.Mobile,
+        Fax = c.Fax,
+    };
+
+    public async Task<ErpContactResult> UpsertContactAsync(string vendorNumber, ErpContact contact, CancellationToken ct = default)
+    {
+        // Create (no keys) vs update in place (has SapUuid). "01" = create, "04" = save/update.
+        var creating = string.IsNullOrEmpty(contact.SapUuid);
+        var actionCode = creating ? "01" : "04";
+        var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
+            Sap.BuildContactPerson(vendorNumber, ToSapContact(contact), actionCode), ct);
+        if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")
+            throw new InvalidOperationException(
+                $"SAP ByDesign contact {(creating ? "create" : "update")} for {vendorNumber} failed: {Local(doc.Root, "Note") ?? "unknown error"}");
+
+        // Prefer the keys echoed in the confirmation; for a create, fall back to re-reading the
+        // supplier and matching the new contact by email/name so we can persist its SAP keys.
+        var respCp = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "ContactPerson");
+        string? uuid = respCp?.Elements().FirstOrDefault(e => e.Name.LocalName == "BusinessPartnerContactUUID")?.Value ?? contact.SapUuid;
+        string? internalId = respCp?.Elements().FirstOrDefault(e => e.Name.LocalName == "BusinessPartnerContactInternalID")?.Value ?? contact.SapInternalId;
+
+        if (creating && string.IsNullOrEmpty(uuid))
+        {
+            var re = await GetVendorAsync(vendorNumber, ct);
+            var match = re?.Contacts.FirstOrDefault(x =>
+                (!string.IsNullOrEmpty(contact.Email) && string.Equals(x.Email, contact.Email, StringComparison.OrdinalIgnoreCase)) ||
+                (string.Equals(x.FirstName, contact.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                 string.Equals(x.LastName, contact.LastName, StringComparison.OrdinalIgnoreCase)));
+            uuid = match?.SapUuid; internalId = match?.SapInternalId;
+        }
+
+        _log.LogInformation("[SAP ByD] ContactPerson {Action} on supplier {Number} (uuid {Uuid})",
+            creating ? "created" : "updated", vendorNumber, uuid ?? "?");
+        return new ErpContactResult(uuid, internalId);
+    }
+
+    public async Task DeleteContactAsync(string vendorNumber, string? sapUuid, string? sapInternalId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(sapUuid) && string.IsNullOrEmpty(sapInternalId))
+            return; // never synced to SAP — nothing to delete there
+        var contact = new SapContact { Uuid = sapUuid, InternalId = sapInternalId };
+        var doc = await PostAsync(_opt.ManageSupplierPath, Sap.ManageAction,
+            Sap.BuildContactPerson(vendorNumber, contact, "03"), ct);
+        if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")
+            throw new InvalidOperationException(
+                $"SAP ByDesign contact delete for {vendorNumber} failed: {Local(doc.Root, "Note") ?? "unknown error"}");
+        _log.LogInformation("[SAP ByD] ContactPerson deleted on supplier {Number} (uuid {Uuid})", vendorNumber, sapUuid ?? sapInternalId);
     }
 
     /// <summary>
@@ -286,6 +309,33 @@ public class SapByDesignErpClient : IErpClient
                ?? contacts.FirstOrDefault();
     }
 
+    /// <summary>Maps one SAP ContactPerson element to an <see cref="ErpContact"/>.</summary>
+    internal static ErpContact ParseContact(XElement contact)
+    {
+        string? C(string n) => contact.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
+        var c = new ErpContact
+        {
+            SapUuid = C("BusinessPartnerContactUUID"),
+            SapInternalId = C("BusinessPartnerContactInternalID"),
+            IsPrimary = string.Equals(C("DefaultContactPersonIndicator"), "true", StringComparison.OrdinalIgnoreCase),
+            FirstName = TitleCaseOrNull(C("GivenName")),
+            LastName = TitleCaseOrNull(C("FamilyName")),
+            Title = C("FormOfAddressCode"),
+            Function = C("BusinessPartnerFunctionTypeCode"),
+            Department = C("BusinessPartnerFunctionalAreaCode"),
+            Email = C("WorkplaceEMailURI"),
+            Fax = C("WorkplaceFacsimileFormattedNumberDescription"),
+        };
+        foreach (var tel in contact.Elements().Where(e => e.Name.LocalName == "WorkplaceTelephone"))
+        {
+            var num = tel.Elements().FirstOrDefault(e => e.Name.LocalName == "FormattedNumberDescription")?.Value;
+            var isMobile = string.Equals(tel.Elements().FirstOrDefault(e => e.Name.LocalName == "MobilePhoneNumberIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(num)) continue;
+            if (isMobile) c.Mobile = num; else c.Phone = num;
+        }
+        return c;
+    }
+
     // ---------------------------------------------------------------- http
     private async Task<XDocument> PostAsync(string path, string soapAction, string envelope, CancellationToken ct)
     {
@@ -325,28 +375,10 @@ public class SapByDesignErpClient : IErpClient
             Tin = F("TaxID") ?? F("PartyTaxID"),
         };
 
-        // Primary contact = the default ContactPerson. Names are title-cased (SAP stores upper).
-        var contact = FindDefaultContact(supplier);
-        if (contact is not null)
-        {
-            string? C(string n) => contact.Elements().FirstOrDefault(e => e.Name.LocalName == n)?.Value;
-            dto.ContactFirstName = TitleCaseOrNull(C("GivenName"));
-            dto.ContactLastName = TitleCaseOrNull(C("FamilyName"));
-            // Title / Function / Department are SAP-coded dropdowns — carry the codes (the
-            // portal resolves them to labels via the ContactCode config tables).
-            dto.ContactTitle = C("FormOfAddressCode");
-            dto.ContactFunction = C("BusinessPartnerFunctionTypeCode");
-            dto.ContactDepartment = C("BusinessPartnerFunctionalAreaCode");
-            dto.ContactEmail = C("WorkplaceEMailURI");
-            dto.ContactFax = C("WorkplaceFacsimileFormattedNumberDescription");
-            foreach (var tel in contact.Elements().Where(e => e.Name.LocalName == "WorkplaceTelephone"))
-            {
-                var num = tel.Elements().FirstOrDefault(e => e.Name.LocalName == "FormattedNumberDescription")?.Value;
-                var isMobile = string.Equals(tel.Elements().FirstOrDefault(e => e.Name.LocalName == "MobilePhoneNumberIndicator")?.Value, "true", StringComparison.OrdinalIgnoreCase);
-                if (string.IsNullOrEmpty(num)) continue;
-                if (isMobile) dto.ContactMobile = num; else dto.ContactPhone = num;
-            }
-        }
+        // All ContactPersons on the supplier → the vendor's contact list. Names are
+        // title-cased (SAP stores upper); Title/Function/Department are the SAP codes.
+        dto.Contacts = supplier.Descendants().Where(e => e.Name.LocalName == "ContactPerson")
+            .Select(ParseContact).ToList();
 
         // PO Box vs street address. SAP flags a PO Box with POBoxIndicator=true and carries
         // the box number/postal code in dedicated fields (no StreetName). Surface the right

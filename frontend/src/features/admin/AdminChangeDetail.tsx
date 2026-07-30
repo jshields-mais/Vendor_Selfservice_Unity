@@ -56,13 +56,28 @@ export function AdminChangeDetail() {
               {["Field", "Current (ERP)", "Requested"].map((c) => <th key={c} style={th}>{c}</th>)}
             </tr></thead>
             <tbody>
-              {cr.diffs.map((d) => (
-                <tr key={d.field} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
-                  <td style={{ ...td, fontWeight: 600 }}>{d.field}</td>
-                  <td style={{ ...td, color: "var(--fg-2)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>{d.fromValue}</td>
-                  <td style={{ ...td, fontFamily: "var(--font-mono)" }}><span style={{ background: "var(--colorStatusSuccessBackground1)", color: "var(--colorStatusSuccessForeground1)", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>{d.toValue}</span></td>
-                </tr>
-              ))}
+              {cr.diffs.map((d) => {
+                // Contacts carry a JSON payload per contact; render it readably.
+                if (d.field.startsWith("contact:")) {
+                  const isDelete = !d.toValue?.trim();
+                  return (
+                    <tr key={d.field} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
+                      <td style={{ ...td, fontWeight: 600 }}>{d.field.endsWith(":new") || d.field === "contact:new" ? "Contact (new)" : "Contact"}</td>
+                      <td style={{ ...td, color: "var(--fg-2)" }}>{d.fromValue === "(existing)" ? "Existing contact" : "—"}</td>
+                      <td style={td}>{isDelete
+                        ? <span style={{ color: "var(--colorStatusDangerForeground1)", fontWeight: 600 }}>Remove contact</span>
+                        : <ContactSummary json={d.toValue!} />}</td>
+                    </tr>
+                  );
+                }
+                return (
+                  <tr key={d.field} style={{ borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
+                    <td style={{ ...td, fontWeight: 600 }}>{d.field}</td>
+                    <td style={{ ...td, color: "var(--fg-2)", textDecoration: "line-through", fontFamily: "var(--font-mono)" }}>{d.fromValue}</td>
+                    <td style={{ ...td, fontFamily: "var(--font-mono)" }}><span style={{ background: "var(--colorStatusSuccessBackground1)", color: "var(--colorStatusSuccessForeground1)", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>{d.toValue}</span></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </Card>
@@ -125,6 +140,25 @@ function PdfSidesheet({ documentId, name, onClose }: { documentId: string; name:
             : <div style={{ padding: 24, color: "var(--fg-2)", fontSize: 14 }}>Loading preview…</div>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Renders a contact change-request JSON payload as a readable field list. */
+function ContactSummary({ json }: { json: string }) {
+  let p: Record<string, string> = {};
+  try { p = JSON.parse(json) || {}; } catch { /* fall through to raw */ }
+  const name = [p.firstName, p.lastName].filter(Boolean).join(" ");
+  const rows: [string, string | undefined][] = [
+    ["Title", p.title], ["Function", p.function], ["Department", p.department],
+    ["Email", p.email], ["Phone", p.phone], ["Mobile", p.mobile], ["Fax", p.fax],
+  ];
+  return (
+    <div style={{ fontSize: 13 }}>
+      <div style={{ fontWeight: 600, marginBottom: 3 }}>{name || "(no name)"}</div>
+      {rows.filter(([, v]) => v).map(([k, v]) => (
+        <div key={k} style={{ color: "var(--fg-2)" }}><span style={{ color: "var(--fg-3)" }}>{k}:</span> {v}</div>
+      ))}
     </div>
   );
 }

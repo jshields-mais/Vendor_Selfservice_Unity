@@ -51,16 +51,8 @@ public class Vendor
     public string ExemptPayee { get; set; } = "No";
     public string? W9OnFile { get; set; }
 
-    // ---- Primary contact (maps to the SAP default ContactPerson) ----
-    public string? ContactFirstName { get; set; }   // required in the UI
-    public string? ContactLastName { get; set; }     // required in the UI
-    public string? ContactTitle { get; set; }        // WorkplaceFunctionalTitleName
-    public string? ContactFunction { get; set; }     // portal-only (SAP function is coded)
-    public string? ContactDepartment { get; set; }   // WorkplaceDepartmentName
-    public string? ContactEmail { get; set; }        // WorkplaceEMailURI
-    public string? ContactPhone { get; set; }         // WorkplaceTelephone (mobile=false)
-    public string? ContactMobile { get; set; }        // WorkplaceTelephone (mobile=true)
-    public string? ContactFax { get; set; }           // WorkplaceFacsimileFormattedNumberDescription
+    // ---- Contacts (each maps to a SAP ContactPerson on the supplier) ----
+    public List<Contact> Contacts { get; set; } = new();
 
     // Supplier-level address email/phone (kept for the address node; not the contact).
     public string? PrimaryEmail { get; set; }

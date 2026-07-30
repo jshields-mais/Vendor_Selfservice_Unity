@@ -16,7 +16,9 @@ public record MeDto(
 public record AddressDto(bool IsPoBox, string? PoBox, string RemitStreet, string? HouseNumber, string RemitCity, string RemitState, string RemitZip, string RemitCountry, string? PhysicalAddress);
 public record BankingDto(string PaymentMethod, string? BankName, string? RoutingNumberMasked, string? AccountNumberMasked, string AccountType);
 public record TaxDto(string? LegalTaxName, string TaxIdType, string? TinMasked, string? TaxClassification, string ExemptPayee, string? W9OnFile);
-public record ContactsDto(string? FirstName, string? LastName, string? Title, string? Function, string? Department, string? Email, string? Phone, string? Mobile, string? Fax);
+public record ContactDto(Guid Id, bool IsPrimary, string? FirstName, string? LastName, string? Title, string? Function, string? Department, string? Email, string? Phone, string? Mobile, string? Fax);
+/// <summary>The JSON payload a Contacts change request carries in each diff's ToValue.</summary>
+public record ContactPayloadDto(string? FirstName, string? LastName, string? Title, string? Function, string? Department, string? Email, string? Phone, string? Mobile, string? Fax);
 public record DocumentDto(Guid Id, string Name, string? FileRef, string Validity, string Status, string? TypeCode);
 public record NotificationRecipientDto(string Kind, string Email);
 public record NotificationDto(string Type, NotificationRecipientDto[] Recipients);
@@ -33,7 +35,7 @@ public record VendorDto(
     AddressDto Address,
     BankingDto Banking,
     TaxDto Tax,
-    ContactsDto Contacts,
+    ContactDto[] Contacts,
     string[] CategoryCodes,
     DocumentDto[] Documents,
     NotificationDto[] Notifications);

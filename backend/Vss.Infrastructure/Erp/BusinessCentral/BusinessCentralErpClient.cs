@@ -78,6 +78,19 @@ public class BusinessCentralErpClient(
         return Task.FromResult(0);
     }
 
+    public Task<ErpContactResult> UpsertContactAsync(string vendorNumber, ErpContact contact, CancellationToken ct = default)
+    {
+        // BC contacts live on the separate `contacts` entity linked to the vendor; not wired yet.
+        logger.LogWarning("[BC] contact upsert not implemented; kept in the portal for vendor {Number}", vendorNumber);
+        return Task.FromResult(new ErpContactResult(contact.SapUuid, contact.SapInternalId));
+    }
+
+    public Task DeleteContactAsync(string vendorNumber, string? sapUuid, string? sapInternalId, CancellationToken ct = default)
+    {
+        logger.LogWarning("[BC] contact delete not implemented for vendor {Number}", vendorNumber);
+        return Task.CompletedTask;
+    }
+
     // ---------------------------------------------------------------- http
     private async Task<HttpRequestMessage> AuthRequestAsync(HttpMethod method, string url, CancellationToken ct)
     {

@@ -19,6 +19,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
     public DbSet<ContactCode> ContactCodes => Set<ContactCode>();
+    public DbSet<Contact> Contacts => Set<Contact>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -35,6 +36,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
             e.HasMany(v => v.CategoryCodes).WithOne().HasForeignKey(c => c.VendorId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(v => v.Documents).WithOne().HasForeignKey(d => d.VendorId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(v => v.Notifications).WithOne().HasForeignKey(n => n.VendorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(v => v.Contacts).WithOne().HasForeignKey(c => c.VendorId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Notification>()

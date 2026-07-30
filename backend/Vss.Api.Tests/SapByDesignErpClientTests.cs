@@ -121,20 +121,25 @@ public class SapByDesignErpClientTests
     }
 
     [Fact]
-    public async Task GetVendor_parses_default_contact_person_title_cased()
+    public async Task GetVendor_parses_all_contact_persons_title_cased()
     {
         var response = SupplierWithBank("").Replace("<InternalID>62440</InternalID>",
             "<InternalID>62440</InternalID>" +
-            "<ContactPerson><GivenName>JANE</GivenName><FamilyName>DOE</FamilyName></ContactPerson>" +
-            "<ContactPerson><DefaultContactPersonIndicator>true</DefaultContactPersonIndicator>" +
+            "<ContactPerson><BusinessPartnerContactUUID>u-jane</BusinessPartnerContactUUID>" +
+            "<GivenName>JANE</GivenName><FamilyName>DOE</FamilyName></ContactPerson>" +
+            "<ContactPerson><BusinessPartnerContactUUID>u-joe</BusinessPartnerContactUUID>" +
+            "<DefaultContactPersonIndicator>true</DefaultContactPersonIndicator>" +
             "<GivenName>JOE</GivenName><FamilyName>HARDESTY</FamilyName></ContactPerson>");
         var (client, _) = Make((_, _) => FakeHttpHandler.Xml(response));
 
         var v = await client.GetVendorAsync("62440");
 
         Assert.NotNull(v);
-        Assert.Equal("Joe", v!.ContactFirstName);  // default contact, title-cased
-        Assert.Equal("Hardesty", v.ContactLastName);
+        Assert.Equal(2, v!.Contacts.Count);
+        var joe = Assert.Single(v.Contacts, c => c.IsPrimary);
+        Assert.Equal("Joe", joe.FirstName);   // title-cased
+        Assert.Equal("Hardesty", joe.LastName);
+        Assert.Contains(v.Contacts, c => c.FirstName == "Jane" && c.LastName == "Doe" && !c.IsPrimary);
     }
 
     [Fact]

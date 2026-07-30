@@ -16,7 +16,8 @@ public static class VendorMapping
         new AddressDto(v.IsPoBox, v.PoBox, v.RemitStreet, v.HouseNumber, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry, v.PhysicalAddress),
         new BankingDto(v.PaymentMethod, v.BankName, MaskMiddle(v.RoutingNumber, 3, 1), MaskTail(v.AccountNumber, 4), v.AccountType),
         new TaxDto(v.LegalTaxName, v.TaxIdType, MaskTin(v.Tin), v.TaxClassification, v.ExemptPayee, v.W9OnFile),
-        new ContactsDto(v.ContactFirstName, v.ContactLastName, v.ContactTitle, v.ContactFunction, v.ContactDepartment, v.ContactEmail, v.ContactPhone, v.ContactMobile, v.ContactFax),
+        v.Contacts.OrderByDescending(c => c.IsPrimary).ThenBy(c => c.SortOrder)
+            .Select(c => new ContactDto(c.Id, c.IsPrimary, c.FirstName, c.LastName, c.Title, c.Function, c.Department, c.Email, c.Phone, c.Mobile, c.Fax)).ToArray(),
         v.CategoryCodes.Select(c => c.Code).ToArray(),
         v.Documents.Select(d => new DocumentDto(d.Id, d.Name, d.FileRef, d.Validity, d.Status.ToString(), d.DocumentTypeCode)).ToArray(),
         v.Notifications.Select(n => new NotificationDto(n.Type,

@@ -31,7 +31,9 @@ export interface Banking {
 export interface Tax {
   legalTaxName?: string | null; taxIdType: string; tinMasked?: string | null; taxClassification?: string | null; exemptPayee: string; w9OnFile?: string | null;
 }
-export interface Contacts {
+/** One supplier contact (a SAP ContactPerson). Title/function/department carry SAP codes. */
+export interface Contact {
+  id: string; isPrimary: boolean;
   firstName?: string | null; lastName?: string | null; title?: string | null; function?: string | null;
   department?: string | null; email?: string | null; phone?: string | null; mobile?: string | null; fax?: string | null;
 }
@@ -45,7 +47,7 @@ export interface NotificationCatalog { types: { name: string; erpEnabled: boolea
 
 export interface Vendor {
   number: string; legalName: string; dba?: string | null; entityType: string; website?: string | null; status: string;
-  address: Address; banking: Banking; tax: Tax; contacts: Contacts;
+  address: Address; banking: Banking; tax: Tax; contacts: Contact[];
   categoryCodes: string[]; documents: VendorDoc[]; notifications: Notification[];
 }
 

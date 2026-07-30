@@ -51,6 +51,7 @@ public static class DbInitializer
         await db.CategoryCodes.ExecuteDeleteAsync(ct);
         await db.NotificationRecipients.ExecuteDeleteAsync(ct);
         await db.Notifications.ExecuteDeleteAsync(ct);
+        await db.Contacts.ExecuteDeleteAsync(ct);
         await db.VendorUsers.ExecuteDeleteAsync(ct);
         await db.Vendors.ExecuteDeleteAsync(ct);
 
