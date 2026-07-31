@@ -17,7 +17,7 @@ namespace Vss.Api.Controllers;
 [ApiController]
 [Route("api/v1/admin")]
 [Authorize(Policy = "Admin")]
-public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOptions> erpOptions, IDocumentStore store, ErpConfigStore erpConfig) : ControllerBase
+public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOptions> erpOptions, IDocumentStore store, ErpConfigStore erpConfig, ILogger<AdminController> logger) : ControllerBase
 {
     /// <summary>Pings the configured ERP (GetVendor on a sample id) and reports status.</summary>
     [HttpPost("erp/test")]
@@ -117,14 +117,26 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
 
         if (cr.Section == "Documents" && cr.DocumentId is not null)
         {
-            // Document submission: attach the uploaded file to the ERP supplier master.
+            // Document submission: attach the uploaded file to the ERP supplier master. The ERP
+            // attachment is best-effort — a failure (e.g. a same-named file already on the
+            // supplier) must not block the reviewer's approval, so mark the document approved
+            // regardless and log any ERP issue.
             var doc = await db.Documents.FirstOrDefaultAsync(d => d.Id == cr.DocumentId, ct);
             if (doc?.StorageRef is not null)
             {
                 var file = await store.GetAsync(doc.StorageRef, ct);
                 if (file is not null)
-                    await erp.AddSupplierAttachmentAsync(cr.Vendor.Number,
-                        new ErpAttachment { FileName = file.FileName, MimeType = file.ContentType, Content = file.Content }, ct);
+                {
+                    try
+                    {
+                        await erp.AddSupplierAttachmentAsync(cr.Vendor.Number,
+                            new ErpAttachment { FileName = file.FileName, MimeType = file.ContentType, Content = file.Content }, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "ERP attachment failed for change request {Code}; document approved locally", cr.Code);
+                    }
+                }
                 doc.Status = DocumentStatus.Current;
             }
             cr.Vendor.LastSyncedAt = approvedAt;

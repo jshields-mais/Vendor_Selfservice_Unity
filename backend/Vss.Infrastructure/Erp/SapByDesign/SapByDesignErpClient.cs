@@ -115,8 +115,17 @@ public class SapByDesignErpClient : IErpClient
             Sap.BuildAddAttachment(vendorNumber, att.FileName, att.MimeType, base64), ct);
 
         if (Local(doc.Root, "MaximumLogItemSeverityCode") == "3")
-            throw new InvalidOperationException(
-                $"SAP ByDesign attachment for {vendorNumber} failed: {Local(doc.Root, "Note") ?? "unknown error"}");
+        {
+            var note = Local(doc.Root, "Note") ?? "unknown error";
+            // A same-named attachment already on the supplier is not a real failure — the file
+            // is already there, so treat it as an idempotent success rather than blocking approval.
+            if (note.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                _log.LogInformation("[SAP ByD] attachment {File} already on supplier {Number}; treated as attached", att.FileName, vendorNumber);
+                return true;
+            }
+            throw new InvalidOperationException($"SAP ByDesign attachment for {vendorNumber} failed: {note}");
+        }
 
         _log.LogInformation("[SAP ByD] attachment {File} ({Bytes} bytes) added to supplier {Number}",
             att.FileName, att.Content.Length, vendorNumber);

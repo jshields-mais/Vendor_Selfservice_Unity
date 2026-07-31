@@ -36,7 +36,6 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
     case "company": return [
       t("LegalName", "Legal business name", v.legalName, true),
       t("Dba", "DBA / trade name", v.dba),
-      sel("EntityType", "Entity type", v.entityType, ["LLC", "Corporation", "Sole proprietor", "Partnership"]),
       t("Website", "Website", v.website),
       ro("Number", "Vendor number", v.number),
       ro("Status", "Portal status", `Linked · ${v.status}`),
@@ -536,7 +535,7 @@ function ContactSideSheet({ contact, codes, onClose, onSubmitted }:
           <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", fontSize: 20, cursor: "pointer", color: "var(--fg-3)" }}>×</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 18px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 18px", alignContent: "start" }}>
           {/* Title on its own row */}
           <div style={{ gridColumn: "span 2" }}>
             <Label>Title</Label>
