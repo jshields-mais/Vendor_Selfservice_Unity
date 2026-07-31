@@ -114,7 +114,6 @@ public class StubErpClient : IErpClient
         AccountType = v.AccountType,
         TaxIdType = v.TaxIdType,
         Tin = v.Tin,
-        TaxClassification = v.TaxClassification,
         Contacts = v.Contacts.OrderBy(c => c.SortOrder).Select(c => new ErpContact
         {
             SapUuid = c.SapUuid, SapInternalId = c.SapInternalId, IsPrimary = c.IsPrimary,

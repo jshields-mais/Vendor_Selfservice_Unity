@@ -58,7 +58,6 @@ public static class PortalQueries
         AccountType = d.AccountType,
         TaxIdType = d.TaxIdType,
         Tin = d.Tin,
-        TaxClassification = d.TaxClassification,
         Contacts = d.Contacts.Select((c, i) => new Contact
         {
             SapUuid = c.SapUuid, SapInternalId = c.SapInternalId, IsPrimary = c.IsPrimary,

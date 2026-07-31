@@ -47,9 +47,6 @@ public class Vendor
     public string? LegalTaxName { get; set; }
     public string TaxIdType { get; set; } = "EIN";
     public string? Tin { get; set; }
-    public string? TaxClassification { get; set; }
-    public string ExemptPayee { get; set; } = "No";
-    public string? W9OnFile { get; set; }
 
     // ---- Contacts (each maps to a SAP ContactPerson on the supplier) ----
     public List<Contact> Contacts { get; set; } = new();

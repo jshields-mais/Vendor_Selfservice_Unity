@@ -29,7 +29,7 @@ export interface Banking {
   paymentMethod: string; bankName?: string | null; routingNumberMasked?: string | null; accountNumberMasked?: string | null; accountType: string;
 }
 export interface Tax {
-  legalTaxName?: string | null; taxIdType: string; tinMasked?: string | null; taxClassification?: string | null; exemptPayee: string; w9OnFile?: string | null;
+  legalTaxName?: string | null; taxIdType: string; tinMasked?: string | null;
 }
 /** One supplier contact (a SAP ContactPerson). Title/function/department carry SAP codes. */
 export interface Contact {

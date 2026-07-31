@@ -30,7 +30,6 @@ public class ErpVendorDto
 
     public string TaxIdType { get; set; } = "EIN";
     public string? Tin { get; set; }
-    public string? TaxClassification { get; set; }
 
     // Contacts (each a SAP ContactPerson on the supplier)
     public List<ErpContact> Contacts { get; set; } = new();

@@ -15,7 +15,7 @@ public static class VendorMapping
         v.Status,
         new AddressDto(v.IsPoBox, v.PoBox, v.RemitStreet, v.HouseNumber, v.RemitCity, v.RemitState, v.RemitZip, v.RemitCountry, v.PhysicalAddress),
         new BankingDto(v.PaymentMethod, v.BankName, MaskMiddle(v.RoutingNumber, 3, 1), MaskTail(v.AccountNumber, 4), v.AccountType),
-        new TaxDto(v.LegalTaxName, v.TaxIdType, MaskTin(v.Tin), v.TaxClassification, v.ExemptPayee, v.W9OnFile),
+        new TaxDto(v.LegalTaxName, v.TaxIdType, MaskTin(v.Tin)),
         v.Contacts.OrderByDescending(c => c.IsPrimary).ThenBy(c => c.SortOrder)
             .Select(c => new ContactDto(c.Id, c.IsPrimary, c.FirstName, c.LastName, c.Title, c.Function, c.Department, c.Email, c.Phone, c.Mobile, c.Fax)).ToArray(),
         v.CategoryCodes.Select(c => c.Code).ToArray(),
@@ -34,7 +34,7 @@ public static class VendorMapping
             !string.IsNullOrWhiteSpace(v.AccountNumber),
             !string.IsNullOrWhiteSpace(v.Tin),
             !string.IsNullOrWhiteSpace(v.PrimaryEmail),
-            !string.IsNullOrWhiteSpace(v.W9OnFile),
+            v.Documents.Any(d => d.DocumentTypeCode == "W9" && d.Status == DocumentStatus.Current),
             v.Documents.Any(d => d.Status == DocumentStatus.Current),
         };
         return (int)Math.Round(100.0 * checks.Count(x => x) / checks.Length);

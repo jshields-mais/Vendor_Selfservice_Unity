@@ -22,7 +22,7 @@ const META: Record<string, { title: string; hint: string; section: string }> = {
   contacts: { title: "Contacts", hint: "People the City reaches for orders, payments and sales.", section: "Contacts" },
   addresses: { title: "Addresses", hint: "Where remittances and correspondence are sent.", section: "Addresses" },
   banking: { title: "Banking & remittance", hint: "EFT details. Changes always require City approval.", section: "Banking & remittance" },
-  tax: { title: "Tax & W-9", hint: "Tax identification and classification on file.", section: "Tax & W-9" },
+  tax: { title: "Tax & W-9", hint: "Tax identification on file.", section: "Tax & W-9" },
   documents: { title: "Documents & compliance", hint: "Upload and keep required documents current.", section: "Documents" },
   categories: { title: "Category codes", hint: "Commodity and NIGP codes you supply against.", section: "Category codes" },
   notifications: { title: "Notifications", hint: "Email recipients for the documents the City sends you.", section: "Notifications" } };
@@ -69,14 +69,22 @@ function fieldsFor(tab: string, v: Vendor): FieldDef[] {
         { ...sel("AccountType", "Account type", v.banking.accountType, ["Checking", "Savings"]), showWhen: needsBank },
       ];
     }
-    case "tax": return [
-      t("LegalTaxName", "Legal tax name", v.tax.legalTaxName, true),
-      sel("TaxIdType", "Tax ID type", v.tax.taxIdType, ["EIN", "SSN", "ITIN"]),
-      t("Tin", "TIN / EIN", v.tax.tinMasked),
-      sel("TaxClassification", "Tax classification", v.tax.taxClassification, ["S-Corporation", "C-Corporation", "LLC", "Individual"]),
-      sel("ExemptPayee", "Exempt payee", v.tax.exemptPayee, ["No", "Yes"]),
-      ro("W9OnFile", "W-9 on file", v.tax.w9OnFile),
-    ];
+    case "tax": {
+      // "W-9 on file" reflects the actual W-9 document on the Documents tab (read-only).
+      const w9 = v.documents.find((d) => (d.typeCode ?? "").toUpperCase() === "W9");
+      const suffix = w9 && w9.validity && w9.validity !== "—" ? ` · ${w9.validity}` : "";
+      const w9label = !w9 || !w9.fileRef ? "Not uploaded — see Documents tab"
+        : w9.status === "AwaitingDocs" ? "Awaiting upload — see Documents tab"
+        : w9.status === "PendingReview" ? "Uploaded — pending City review"
+        : w9.status === "Expiring" ? `Expiring${suffix}`
+        : `On file${suffix}`;
+      return [
+        t("LegalTaxName", "Legal tax name", v.tax.legalTaxName, true),
+        sel("TaxIdType", "Tax ID type", v.tax.taxIdType, ["EIN", "SSN", "ITIN"]),
+        t("Tin", "TIN / EIN", v.tax.tinMasked),
+        ro("W9OnFile", "W-9 on file", w9label),
+      ];
+    }
     default: return [];
   }
 }

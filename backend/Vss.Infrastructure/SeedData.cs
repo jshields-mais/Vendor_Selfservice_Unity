@@ -59,9 +59,6 @@ public static class SeedData
             LegalTaxName = "Northstar Supply Co.",
             TaxIdType = "EIN",
             Tin = "81-3920423",
-            TaxClassification = "S-Corporation",
-            ExemptPayee = "No",
-            W9OnFile = "Signed 02/14/2026",
             Contacts = new()
             {
                 new() { IsPrimary = true, SortOrder = 0, FirstName = "Dana", LastName = "Whitfield",
