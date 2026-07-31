@@ -20,6 +20,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
     public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
     public DbSet<ContactCode> ContactCodes => Set<ContactCode>();
     public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<NotificationType> NotificationTypes => Set<NotificationType>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -62,5 +63,7 @@ public class VssDbContext(DbContextOptions<VssDbContext> options) : DbContext(op
 
         // One code is unique within its list (the same code may recur across categories).
         b.Entity<ContactCode>(e => e.HasIndex(c => new { c.Category, c.Code }).IsUnique());
+
+        b.Entity<NotificationType>(e => e.HasIndex(t => t.Name).IsUnique());
     }
 }

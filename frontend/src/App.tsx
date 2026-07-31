@@ -20,6 +20,7 @@ import { AdminLinkRequests } from "./features/admin/AdminLinkRequests";
 import { AdminErp } from "./features/admin/AdminErp";
 import { AdminDocumentTypes } from "./features/admin/AdminDocumentTypes";
 import { AdminContactCodes } from "./features/admin/AdminContactCodes";
+import { AdminNotificationTypes } from "./features/admin/AdminNotificationTypes";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -65,6 +66,7 @@ function Shell() {
       <Route path="/admin/erp" element={<RequireAuth><AdminErp /></RequireAuth>} />
       <Route path="/admin/document-types" element={<RequireAuth><AdminDocumentTypes /></RequireAuth>} />
       <Route path="/admin/contact-codes" element={<RequireAuth><AdminContactCodes /></RequireAuth>} />
+      <Route path="/admin/notification-types" element={<RequireAuth><AdminNotificationTypes /></RequireAuth>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

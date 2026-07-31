@@ -38,10 +38,12 @@ public class VendorController(VssDbContext db, CurrentUser current, IErpClient e
 
     /// <summary>Notification types offered on the Notifications tab.</summary>
     [HttpGet("notification-catalog")]
-    public ActionResult<NotificationCatalogDto> NotificationCatalog()
+    public async Task<ActionResult<NotificationCatalogDto>> NotificationCatalog(CancellationToken ct)
     {
-        var types = Vss.Infrastructure.Erp.CommunicationCatalog.Documents
-            .Select(d => new NotificationTypeDto(d.Name, d.ErpEnabled)).ToArray();
+        var types = await db.NotificationTypes.Where(t => t.IsActive)
+            .OrderBy(t => t.SortOrder).ThenBy(t => t.Name)
+            .Select(t => new NotificationTypeDto(t.Name, t.ErpServiceCode != null && t.ErpServiceCode != ""))
+            .ToArrayAsync(ct);
         return new NotificationCatalogDto(types);
     }
 

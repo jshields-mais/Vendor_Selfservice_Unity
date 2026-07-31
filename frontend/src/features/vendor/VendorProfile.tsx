@@ -305,83 +305,142 @@ function CategoriesPanel({ vendor }: { vendor: Vendor }) {
 }
 
 const NOTIF_KINDS = ["To", "Cc", "Bcc"] as const;
-const parseEmails = (text: string) =>
-  text.split(/[,;\n\r]+/).map((s) => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
 
-/** Notifications: per-document (Remittance Advice Outbound / Purchase Order / Contract)
- *  To/CC/BCC email recipients. Reviewed, then written to the ERP communication section. */
+const KIND_LABEL: Record<string, string> = { To: "To", Cc: "CC", Bcc: "BCC" };
+let _rid = 0;
+const newRid = () => `r${++_rid}`;
+
+/** Notifications: one card per active notification type (admin-configured) showing a read-only
+ *  grid of To/CC/BCC recipients; "Edit recipients" opens a side sheet to add/edit/delete them. */
 function NotificationsPanel({ vendor, onSubmitted }: { vendor: Vendor; onSubmitted: () => void }) {
-  const qc = useQueryClient();
   const { data: catalog } = useNotificationCatalog();
-
-  // current[type][kind] = joined emails (", ")
-  const current = useMemo(() => {
-    const m: Record<string, Record<string, string>> = {};
-    for (const n of vendor.notifications) {
-      m[n.type] = { To: "", Cc: "", Bcc: "" };
-      for (const k of NOTIF_KINDS) m[n.type][k] = n.recipients.filter((r) => r.kind === k).map((r) => r.email).join(", ");
-    }
-    return m;
-  }, [vendor.notifications]);
-
-  const [text, setText] = useState<Record<string, string>>({}); // key `${type}::${kind}` -> raw text
-  const val = (type: string, kind: string) => text[`${type}::${kind}`] ?? current[type]?.[kind] ?? "";
-  const setVal = (type: string, kind: string, v: string) => setText((t) => ({ ...t, [`${type}::${kind}`]: v }));
+  const [editing, setEditing] = useState<{ name: string; erpEnabled: boolean } | null>(null);
 
   const types = catalog?.types ?? [];
-  const diffs: ChangeDiff[] = [];
-  for (const ty of types) for (const k of NOTIF_KINDS) {
-    const to = parseEmails(val(ty.name, k)).join(", ");
-    const from = parseEmails(current[ty.name]?.[k] ?? "").join(", ");
-    if (to !== from) diffs.push({ field: `${ty.name} · ${k}`, fromValue: from, toValue: to });
-  }
-  // A type with any recipients must have at least one To.
-  const invalid = types.filter((ty) => {
-    const any = NOTIF_KINDS.some((k) => parseEmails(val(ty.name, k)).length > 0);
-    return any && parseEmails(val(ty.name, "To")).length === 0;
-  }).map((ty) => ty.name);
-
-  const submit = useMutation({
-    mutationFn: () => changeRequests.create({ section: "Notifications", diffs }),
-    onSuccess: async () => {
-      await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]);
-      onSubmitted();
-    },
-  });
-
-  const box: React.CSSProperties = { width: "100%", minHeight: 54, padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-sm)", fontSize: 13, fontFamily: "var(--font-sans)", color: "var(--colorNeutralForeground1)", resize: "vertical" };
+  const recipientsFor = (name: string) => vendor.notifications.find((n) => n.type === name)?.recipients ?? [];
 
   return (
     <div style={{ padding: "8px 0" }}>
-      {types.map((ty) => (
-        <div key={ty.name} style={{ padding: "16px 24px", borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{ty.name}</div>
-            {!ty.erpEnabled && <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)" }}>Recorded in the portal — ERP sync pending configuration</div>}
+      {types.length === 0 && <div style={{ padding: "18px 24px", fontSize: 13, color: "var(--fg-3)" }}>No notification types are available.</div>}
+      {types.map((ty) => {
+        const recips = [...recipientsFor(ty.name)].sort((a, b) => NOTIF_KINDS.indexOf(a.kind as typeof NOTIF_KINDS[number]) - NOTIF_KINDS.indexOf(b.kind as typeof NOTIF_KINDS[number]));
+        return (
+          <div key={ty.name} style={{ padding: "16px 24px", borderBottom: "1px solid var(--colorNeutralStroke3)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{ty.name}</div>
+              {!ty.erpEnabled && <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)" }}>Recorded in the portal — ERP sync pending configuration</div>}
+              <span style={{ flex: 1 }} />
+              <Button variant="outline" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setEditing({ name: ty.name, erpEnabled: ty.erpEnabled })}>Edit recipients</Button>
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--colorNeutralStroke3)" }}>
+              <thead><tr style={{ background: "var(--bg-2)" }}>
+                <th style={{ ...ntTh, width: 90 }}>Type</th><th style={ntTh}>Email</th>
+              </tr></thead>
+              <tbody>
+                {recips.length === 0 && <tr><td colSpan={2} style={{ ...ntTd, color: "var(--fg-3)" }}>No recipients set.</td></tr>}
+                {recips.map((r, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid var(--colorNeutralStroke3)" }}>
+                    <td style={{ ...ntTd, fontWeight: 600 }}>{KIND_LABEL[r.kind] ?? r.kind}</td>
+                    <td style={ntTd}>{r.email}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-            {NOTIF_KINDS.map((k) => (
-              <div key={k}>
-                <Label>{k === "To" ? "To *" : k.toUpperCase()}</Label>
-                <textarea value={val(ty.name, k)} onChange={(e) => setVal(ty.name, k, e.target.value)}
-                  placeholder="email@company.com (one per line or comma-separated)" style={box} />
-              </div>
-            ))}
+        );
+      })}
+      {editing && (
+        <NotificationRecipientsSheet
+          type={editing.name}
+          erpEnabled={editing.erpEnabled}
+          recipients={recipientsFor(editing.name)}
+          onClose={() => setEditing(null)}
+          onSubmitted={onSubmitted}
+        />
+      )}
+    </div>
+  );
+}
+
+function NotificationRecipientsSheet({ type, erpEnabled, recipients, onClose, onSubmitted }:
+  { type: string; erpEnabled: boolean; recipients: { kind: string; email: string }[]; onClose: () => void; onSubmitted: () => void }) {
+  const qc = useQueryClient();
+  const [rows, setRows] = useState(() => recipients.map((r) => ({ id: newRid(), kind: r.kind, email: r.email })));
+  const setRow = (id: string, patch: Partial<{ kind: string; email: string }>) =>
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const addRow = () => setRows((rs) => [...rs, { id: newRid(), kind: "To", email: "" }]);
+  const delRow = (id: string) => setRows((rs) => rs.filter((r) => r.id !== id));
+
+  // Emails per kind (trimmed, de-duped) from the editor rows.
+  const byKind = (kind: string) => rows.filter((r) => r.kind === kind).map((r) => r.email.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  const anyEmail = rows.some((r) => r.email.trim());
+  const missingTo = anyEmail && byKind("To").length === 0;
+
+  // Diffs vs the current stored recipients, per kind.
+  const currentByKind = (kind: string) => recipients.filter((r) => r.kind === kind).map((r) => r.email).filter((v, i, a) => a.indexOf(v) === i);
+  const diffs: ChangeDiff[] = NOTIF_KINDS.flatMap((k) => {
+    const to = byKind(k).join(", ");
+    const from = currentByKind(k).join(", ");
+    return to !== from ? [{ field: `${type} · ${k}`, fromValue: from, toValue: to }] : [];
+  });
+
+  const submit = useMutation({
+    mutationFn: () => changeRequests.create({ section: "Notifications", diffs }),
+    onSuccess: async () => { await Promise.all([qc.invalidateQueries({ queryKey: qk.me }), qc.invalidateQueries({ queryKey: qk.changeRequests })]); onSubmitted(); },
+  });
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.32)", zIndex: 50, display: "flex", justifyContent: "flex-end" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 520, maxWidth: "100%", height: "100%", background: "var(--colorNeutralBackground1)", boxShadow: "-8px 0 24px rgba(0,0,0,.18)", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border-1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>{type} recipients</div>
+            {!erpEnabled && <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>Recorded in the portal — ERP sync pending configuration</div>}
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ border: "none", background: "transparent", fontSize: 20, cursor: "pointer", color: "var(--fg-3)" }}>×</button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ background: "var(--bg-2)" }}>
+              <th style={{ ...ntTh, width: 110 }}>Type</th><th style={ntTh}>Email</th><th style={{ ...ntTh, width: 40 }}></th>
+            </tr></thead>
+            <tbody>
+              {rows.length === 0 && <tr><td colSpan={3} style={{ ...ntTd, color: "var(--fg-3)" }}>No recipients. Add one below.</td></tr>}
+              {rows.map((r) => (
+                <tr key={r.id} style={{ borderTop: "1px solid var(--colorNeutralStroke3)" }}>
+                  <td style={{ ...ntTd, width: 110 }}>
+                    <SelectField options={[...NOTIF_KINDS]} value={r.kind} onChange={(e) => setRow(r.id, { kind: e.target.value })} />
+                  </td>
+                  <td style={ntTd}><TextField value={r.email} placeholder="email@company.com" onChange={(e) => setRow(r.id, { email: e.target.value })} /></td>
+                  <td style={{ ...ntTd, textAlign: "right" }}>
+                    <button onClick={() => delRow(r.id)} aria-label="Remove" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--colorStatusDangerForeground1)", fontSize: 16 }}>×</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Button variant="outline" style={{ marginTop: 14, padding: "8px 14px", fontSize: 13 }} onClick={addRow}>+ Add recipient</Button>
+        </div>
+
+        <div style={{ padding: "14px 22px", borderTop: "1px solid var(--border-1)", background: "var(--bg-2)" }}>
+          <div style={{ fontSize: 12, color: missingTo ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)", marginBottom: 10 }}>
+            {missingTo ? "At least one To address is required." : "Changes are reviewed by City staff before syncing to the ERP."}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" disabled={diffs.length === 0 || missingTo || submit.isPending} onClick={() => submit.mutate()}>
+              {submit.isPending ? "Submitting…" : "Submit for review"}
+            </Button>
           </div>
         </div>
-      ))}
-      <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 13, color: invalid.length ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)" }}>
-          {invalid.length ? `${invalid.join(", ")}: at least one To address is required.`
-            : "Changes are reviewed by City staff before syncing to the ERP."}
-        </div>
-        <Button variant="primary" disabled={diffs.length === 0 || invalid.length > 0 || submit.isPending} onClick={() => submit.mutate()}>
-          {submit.isPending ? "Submitting…" : "Submit notifications for review"}
-        </Button>
       </div>
     </div>
   );
 }
+
+const ntTh = { padding: "9px 14px", textAlign: "left" as const, fontSize: 11, fontWeight: 600, color: "var(--fg-2)" };
+const ntTd = { padding: "8px 14px", fontSize: 13, color: "var(--fg-1)" };
 
 /** Contacts: a grid of the vendor's contacts + a side-sheet editor. Add/edit/delete each
  *  submit a change request; on approval the matching SAP ContactPerson is created/updated/deleted. */

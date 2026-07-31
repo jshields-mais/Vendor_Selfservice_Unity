@@ -94,6 +94,18 @@ public static class SeedData
         Simple("V-12010", "7789", "Big Sky Signage", "Signage", "Livingston", "MT", "59047", "84-2093455"),
     };
 
+    /// <summary>
+    /// Initial notification types offered on the Notifications tab (VSS-owned config, not from
+    /// SAP). Purchase Order carries the confirmed SAP CompoundServiceInterfaceCode "11"; the
+    /// others are portal-only until a code is configured.
+    /// </summary>
+    public static List<NotificationType> NotificationTypes() => new()
+    {
+        new() { Name = "Remittance Advice Outbound", SortOrder = 1, ErpServiceCode = null },
+        new() { Name = "Purchase Order", SortOrder = 2, ErpServiceCode = "11" },
+        new() { Name = "Contract", SortOrder = 3, ErpServiceCode = null },
+    };
+
     /// <summary>Initial configurable document types offered for upload.</summary>
     public static List<DocumentType> DocumentTypes() => new()
     {

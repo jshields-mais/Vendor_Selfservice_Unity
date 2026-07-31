@@ -127,7 +127,9 @@ public class SapByDesignErpClient : IErpClient
     {
         // Resolve each preference to its SAP codes; skip documents/channels without a code.
         var arrangements = prefs
-            .Select(p => (svc: CommunicationCatalog.ServiceInterfaceCodeFor(p.BusinessDocument),
+            .Select(p => (svc: string.IsNullOrEmpty(p.ServiceInterfaceCode)
+                                   ? CommunicationCatalog.ServiceInterfaceCodeFor(p.BusinessDocument)
+                                   : p.ServiceInterfaceCode,
                           med: CommunicationCatalog.MediumCodeFor(p.Channel), p.Email, p.Enabled))
             .Where(x => x.svc is not null && x.med is not null)
             .Select(x => (x.svc!, x.med!, x.Email, x.Enabled))

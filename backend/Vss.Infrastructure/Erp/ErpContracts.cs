@@ -99,6 +99,9 @@ public class ErpCommunicationPreference
     public string? Email { get; set; }
     /// <summary>False when the vendor cleared all recipients → disable the SAP arrangement.</summary>
     public bool Enabled { get; set; } = true;
+    /// <summary>SAP CompoundServiceInterfaceCode from the notification-type config; null/empty
+    /// means the type has no ERP mapping and is skipped for the SAP write.</summary>
+    public string? ServiceInterfaceCode { get; set; }
 }
 
 /// <summary>

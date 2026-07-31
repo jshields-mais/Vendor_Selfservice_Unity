@@ -27,6 +27,9 @@ public static class DbInitializer
         if (!await db.ContactCodes.AnyAsync(ct))
             db.ContactCodes.AddRange(SeedData.ContactCodes());
 
+        if (!await db.NotificationTypes.AnyAsync(ct))
+            db.NotificationTypes.AddRange(SeedData.NotificationTypes());
+
         await db.SaveChangesAsync(ct);
     }
 
@@ -61,6 +64,8 @@ public static class DbInitializer
             db.DocumentTypes.AddRange(SeedData.DocumentTypes());
         if (!await db.ContactCodes.AnyAsync(ct))
             db.ContactCodes.AddRange(SeedData.ContactCodes());
+        if (!await db.NotificationTypes.AnyAsync(ct))
+            db.NotificationTypes.AddRange(SeedData.NotificationTypes());
         await db.SaveChangesAsync(ct);
     }
 }

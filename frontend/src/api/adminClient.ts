@@ -3,6 +3,8 @@ import { VSS_BASE, type ChangeRequest, type DocumentType, type ContactCode } fro
 
 export interface DocumentTypeUpsert { code: string; description: string; isActive: boolean; sortOrder: number; }
 export interface ContactCodeUpsert { category: string; code: string; description: string; isActive: boolean; sortOrder: number; }
+export interface NotificationTypeConfig { id: string; name: string; isActive: boolean; sortOrder: number; erpServiceCode?: string | null; }
+export interface NotificationTypeUpsert { name: string; isActive: boolean; sortOrder: number; erpServiceCode?: string | null; }
 
 // ------------------------------------------------------------------ Admin types
 export interface AdminStats {
@@ -37,6 +39,7 @@ export const adminQk = {
   change: (id: string) => [VSS_BASE, `api/v1/admin/change-requests/${id}`],
   documentTypes: [VSS_BASE, "api/v1/admin/document-types"],
   contactCodes: [VSS_BASE, "api/v1/admin/contact-codes"],
+  notificationTypes: [VSS_BASE, "api/v1/admin/notification-types"],
   erpConfig: [VSS_BASE, "api/v1/admin/erp/config"],
 };
 
@@ -48,6 +51,7 @@ export const useAdminVendors = () => useApiQuery<AdminVendor[]>(VSS_BASE, "api/v
 export const useAdminLinkRequests = () => useApiQuery<AdminLinkRequest[]>(VSS_BASE, "api/v1/admin/link-requests");
 export const useAdminDocumentTypes = () => useApiQuery<DocumentType[]>(VSS_BASE, "api/v1/admin/document-types");
 export const useAdminContactCodes = () => useApiQuery<ContactCode[]>(VSS_BASE, "api/v1/admin/contact-codes");
+export const useAdminNotificationTypes = () => useApiQuery<NotificationTypeConfig[]>(VSS_BASE, "api/v1/admin/notification-types");
 
 export interface ErpTestResult { provider: string; ok: boolean; latencyMs: number; message: string; }
 
@@ -85,4 +89,10 @@ export const adminApi = {
     apiMutate<ContactCode>(VSS_BASE, `api/v1/admin/contact-codes/${id}`, { method: "PUT", body }),
   deleteContactCode: (id: string) =>
     apiMutate<void>(VSS_BASE, `api/v1/admin/contact-codes/${id}`, { method: "DELETE" }),
+  createNotificationType: (body: NotificationTypeUpsert) =>
+    apiMutate<NotificationTypeConfig>(VSS_BASE, "api/v1/admin/notification-types", { method: "POST", body }),
+  updateNotificationType: (id: string, body: NotificationTypeUpsert) =>
+    apiMutate<NotificationTypeConfig>(VSS_BASE, `api/v1/admin/notification-types/${id}`, { method: "PUT", body }),
+  deleteNotificationType: (id: string) =>
+    apiMutate<void>(VSS_BASE, `api/v1/admin/notification-types/${id}`, { method: "DELETE" }),
 };

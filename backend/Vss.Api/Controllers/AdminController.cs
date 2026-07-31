@@ -155,7 +155,10 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
             }
 
             // SAP push, for every type this request touched: the primary To → CommunicationArrangement
-            // email (enabled); a type left with no To disables its arrangement. Coded types only.
+            // email (enabled); a type left with no To disables its arrangement. The SAP service
+            // code comes from the notification-type config (types without a code are portal-only).
+            var typeCodes = await db.NotificationTypes
+                .ToDictionaryAsync(t => t.Name, t => t.ErpServiceCode, StringComparer.OrdinalIgnoreCase, ct);
             var prefs = touchedTypes
                 .Select(type => new
                 {
@@ -167,6 +170,7 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
                 {
                     BusinessDocument = x.Type, Channel = "Email",
                     Email = x.To, Enabled = !string.IsNullOrEmpty(x.To),
+                    ServiceInterfaceCode = typeCodes.GetValueOrDefault(x.Type),
                 })
                 .ToList();
             if (prefs.Count > 0) await erp.UpdateCommunicationPreferencesAsync(cr.Vendor.Number, prefs, ct);
@@ -392,6 +396,68 @@ public class AdminController(VssDbContext db, IErpClient erp, IOptions<ErpOption
             return ("", "", "Code and description are required.");
         return (category, code, null);
     }
+
+    // ---- Notification types (VSS-owned config; activate/deactivate; optional SAP code) ----
+    [HttpGet("notification-types")]
+    public async Task<ActionResult<IEnumerable<NotificationTypeConfigDto>>> NotificationTypes(CancellationToken ct)
+    {
+        var rows = await db.NotificationTypes.OrderBy(t => t.SortOrder).ThenBy(t => t.Name).ToListAsync(ct);
+        return rows.Select(t => new NotificationTypeConfigDto(t.Id, t.Name, t.IsActive, t.SortOrder, t.ErpServiceCode)).ToList();
+    }
+
+    [HttpPost("notification-types")]
+    public async Task<ActionResult<NotificationTypeConfigDto>> CreateNotificationType(NotificationTypeUpsertDto dto, CancellationToken ct)
+    {
+        var name = (dto.Name ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name is required.");
+        if (await db.NotificationTypes.AnyAsync(t => t.Name == name, ct))
+            return Conflict($"Notification type '{name}' already exists.");
+
+        var t = new NotificationType { Name = name, IsActive = dto.IsActive, SortOrder = dto.SortOrder, ErpServiceCode = Nullify(dto.ErpServiceCode) };
+        db.NotificationTypes.Add(t);
+        await db.SaveChangesAsync(ct);
+        return new NotificationTypeConfigDto(t.Id, t.Name, t.IsActive, t.SortOrder, t.ErpServiceCode);
+    }
+
+    [HttpPut("notification-types/{id:guid}")]
+    public async Task<ActionResult<NotificationTypeConfigDto>> UpdateNotificationType(Guid id, NotificationTypeUpsertDto dto, CancellationToken ct)
+    {
+        var t = await db.NotificationTypes.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (t is null) return NotFound();
+        var name = (dto.Name ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(name)) return BadRequest("Name is required.");
+        if (await db.NotificationTypes.AnyAsync(x => x.Name == name && x.Id != id, ct))
+            return Conflict($"Notification type '{name}' already exists.");
+
+        // Renaming a type must carry its existing recipients (keyed by the type name).
+        if (!string.Equals(t.Name, name, StringComparison.Ordinal))
+            foreach (var n in await db.Notifications.Where(n => n.Type == t.Name).ToListAsync(ct))
+                n.Type = name;
+
+        t.Name = name; t.IsActive = dto.IsActive; t.SortOrder = dto.SortOrder; t.ErpServiceCode = Nullify(dto.ErpServiceCode);
+        await db.SaveChangesAsync(ct);
+        return new NotificationTypeConfigDto(t.Id, t.Name, t.IsActive, t.SortOrder, t.ErpServiceCode);
+    }
+
+    [HttpDelete("notification-types/{id:guid}")]
+    public async Task<IActionResult> DeleteNotificationType(Guid id, CancellationToken ct)
+    {
+        var t = await db.NotificationTypes.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (t is null) return NotFound();
+
+        // Preserve recipients already set for this type: deactivate instead of deleting.
+        if (await db.Notifications.AnyAsync(n => n.Type == t.Name, ct))
+        {
+            t.IsActive = false;
+            await db.SaveChangesAsync(ct);
+            return Ok(new { deactivated = true, message = "Type is in use; deactivated instead of deleted." });
+        }
+        db.NotificationTypes.Remove(t);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    private static string? Nullify(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     [HttpGet("link-requests")]
     public async Task<ActionResult<IEnumerable<AdminLinkRequestDto>>> LinkRequests(CancellationToken ct)

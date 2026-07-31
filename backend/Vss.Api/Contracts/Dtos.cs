@@ -24,6 +24,9 @@ public record NotificationRecipientDto(string Kind, string Email);
 public record NotificationDto(string Type, NotificationRecipientDto[] Recipients);
 public record NotificationTypeDto(string Name, bool ErpEnabled);
 public record NotificationCatalogDto(NotificationTypeDto[] Types);
+// Admin config for notification types (VSS-owned; ERP service code optional).
+public record NotificationTypeConfigDto(Guid Id, string Name, bool IsActive, int SortOrder, string? ErpServiceCode);
+public record NotificationTypeUpsertDto(string Name, bool IsActive, int SortOrder, string? ErpServiceCode);
 
 public record VendorDto(
     string Number,
