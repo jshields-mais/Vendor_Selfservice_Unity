@@ -17,7 +17,7 @@ public class SapByDesignErpClientTests
             <Organisation><FirstLineName>Northstar Supply Co.</FirstLineName></Organisation>
             <Address>
               <StreetName>1420 Industrial Blvd</StreetName>
-              <CityName>Bozeman</CityName>
+              <CityName>Unity City</CityName>
               <RegionCode>MT</RegionCode>
               <StreetPostalCode>59715</StreetPostalCode>
               <CountryCode>US</CountryCode>
@@ -48,7 +48,7 @@ public class SapByDesignErpClientTests
         Assert.NotNull(v);
         Assert.Equal("V-10485", v!.Number);
         Assert.Equal("Northstar Supply Co.", v.LegalName);
-        Assert.Equal("Bozeman", v.RemitCity);
+        Assert.Equal("Unity City", v.RemitCity);
         Assert.Equal("59715", v.RemitZip);
         Assert.Equal("81-3920423", v.Tin);
 

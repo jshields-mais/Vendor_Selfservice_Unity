@@ -184,7 +184,7 @@ function FieldEditor({ tab, vendor, section, onSubmitted }: { tab: string; vendo
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-1)", background: "var(--bg-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: 13, color: missing.length ? "var(--colorStatusDangerForeground1)" : "var(--fg-2)" }}>
           {missing.length ? `${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} required.`
-            : diffs.length === 0 ? "Changes are reviewed by City of Bozeman staff before syncing to the ERP."
+            : diffs.length === 0 ? "Changes are reviewed by Unity City staff before syncing to the ERP."
             : `${diffs.length} field${diffs.length > 1 ? "s" : ""} changed — reviewed by City staff before ERP sync.`}
         </div>
         <div style={{ display: "flex", gap: 10 }}>

@@ -31,7 +31,7 @@ export function Login() {
       </div>
 
       <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Work email</label>
-      <input defaultValue={tab === "admin" ? "finance@bozeman.gov" : "dana@northstarsupply.com"}
+      <input defaultValue={tab === "admin" ? "finance@unitycity.gov" : "dana@northstarsupply.com"}
         style={{ width: "100%", padding: "11px 13px", border: "1px solid var(--border-1)", borderRadius: 6, fontSize: 14, outline: "none", marginBottom: 16 }} />
       <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
       <input type="password" defaultValue="passw0rd"

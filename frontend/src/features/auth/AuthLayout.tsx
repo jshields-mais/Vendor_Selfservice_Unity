@@ -19,7 +19,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div style={{ position: "relative", marginTop: "auto" }}>
-          <div style={{ fontSize: 12, color: "var(--colorBrandStroke2)", fontWeight: 600 }}>City of Bozeman · Supplier Portal</div>
+          <div style={{ fontSize: 12, color: "var(--colorBrandStroke2)", fontWeight: 600 }}>Unity City · Supplier Portal</div>
           <h1 style={{ fontSize: 40, lineHeight: 1.1, margin: "16px 0 0", color: "#fff", maxWidth: "15ch" }}>Manage your vendor record in one place.</h1>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "rgba(255,255,255,.82)", maxWidth: "42ch", margin: "18px 0 0" }}>
             Update your company details, banking, tax forms and compliance documents, and submit changes straight to the City's ERP for review.

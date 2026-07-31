@@ -16,7 +16,7 @@ export function ChangeSubmitted() {
         </div>
         <h2 style={{ fontSize: 24, margin: 0 }}>Changes submitted for review</h2>
         <p style={{ fontSize: 15, color: "var(--fg-2)", lineHeight: 1.6, margin: "12px 0 0" }}>
-          Your updates to <b style={{ color: "var(--fg-1)" }}>{latest?.section ?? "your record"}</b> were sent to City of Bozeman staff. Once approved, they'll sync to the ERP vendor master. You'll get an email when the review is complete.
+          Your updates to <b style={{ color: "var(--fg-1)" }}>{latest?.section ?? "your record"}</b> were sent to Unity City staff. Once approved, they'll sync to the ERP vendor master. You'll get an email when the review is complete.
         </p>
         {latest && (
           <div style={{ display: "inline-flex", gap: 8, marginTop: 20, padding: "8px 16px", borderRadius: 999, background: "#fef7b2", color: "#817400", fontSize: 13, fontWeight: 600 }}>

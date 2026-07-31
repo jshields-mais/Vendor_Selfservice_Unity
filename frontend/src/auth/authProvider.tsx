@@ -31,7 +31,7 @@ function DevAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setApiAuthProvider(() => ({
       "X-Dev-Uuid": role === "admin" ? "dev-city-admin" : "dev-dana-northstar",
-      "X-Dev-Email": role === "admin" ? "finance@bozeman.gov" : "dana@northstarsupply.com",
+      "X-Dev-Email": role === "admin" ? "finance@unitycity.gov" : "dana@northstarsupply.com",
       "X-Dev-Name": role === "admin" ? "Finance Admin" : "Dana Whitfield",
       "X-Dev-Role": role,
     }));
@@ -41,7 +41,7 @@ function DevAuthProvider({ children }: { children: ReactNode }) {
     mode: "dev",
     isAuthenticated: true,
     account: role === "admin"
-      ? { name: "Finance Admin", email: "finance@bozeman.gov" }
+      ? { name: "Finance Admin", email: "finance@unitycity.gov" }
       : { name: "Dana Whitfield", email: "dana@northstarsupply.com" },
     role,
     setRole,

@@ -3,7 +3,7 @@ using Vss.Domain;
 namespace Vss.Infrastructure;
 
 /// <summary>
-/// Canonical demo data taken from the VSS prototype (City of Bozeman suppliers).
+/// Canonical demo data taken from the VSS prototype (Unity City suppliers).
 /// Single source of truth for both the portal database seed and the ERP stub, so
 /// the two never drift.
 /// </summary>
@@ -46,7 +46,7 @@ public static class SeedData
             Website = "www.northstarsupply.com",
             Status = "Active",
             RemitStreet = "1420 Industrial Blvd",
-            RemitCity = "Bozeman",
+            RemitCity = "Unity City",
             RemitState = "MT",
             RemitZip = "59715",
             RemitCountry = "United States",
@@ -87,10 +87,10 @@ public static class SeedData
                 new() { Name = "W-8BEN (foreign vendors)", DocumentTypeCode = "W8BEN", FileRef = null, Validity = "—", Status = DocumentStatus.AwaitingDocs },
             }
         },
-        Simple("V-11204", "6501", "Gallatin Paper Co.", "Office & janitorial", "Bozeman", "MT", "59718", "45-2210987"),
+        Simple("V-11204", "6501", "Gallatin Paper Co.", "Office & janitorial", "Unity City", "MT", "59718", "45-2210987"),
         Simple("V-09920", "3372", "Rimrock Electric LLC", "Electrical", "Belgrade", "MT", "59714", "83-1177450"),
-        Simple("V-10771", "9048", "Bridger Mechanical", "HVAC services", "Bozeman", "MT", "59715", "27-5540912"),
-        Simple("V-08841", "1120", "Sourdough Fuels", "Fuel & lubricants", "Bozeman", "MT", "59715", "46-8890123"),
+        Simple("V-10771", "9048", "Bridger Mechanical", "HVAC services", "Unity City", "MT", "59715", "27-5540912"),
+        Simple("V-08841", "1120", "Sourdough Fuels", "Fuel & lubricants", "Unity City", "MT", "59715", "46-8890123"),
         Simple("V-12010", "7789", "Big Sky Signage", "Signage", "Livingston", "MT", "59047", "84-2093455"),
     };
 

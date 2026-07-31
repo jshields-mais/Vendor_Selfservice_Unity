@@ -30,7 +30,8 @@ const VENDOR_NAV: NavItem[] = [
   { label: "Tax & W-9", icon: "receipt", to: "/profile/tax" },
   { label: "Documents", icon: "docs", to: "/profile/documents" },
   { label: "Notifications", icon: "changes", to: "/profile/notifications" },
-  { label: "Category codes", icon: "tag", to: "/profile/categories" },
+  // Category codes hidden for now — route/component retained, just not shown in the menu.
+  // { label: "Category codes", icon: "tag", to: "/profile/categories" },
 ];
 
 function initials(name: string) {
@@ -125,7 +126,7 @@ export function AppShell({ title, crumb, children }: { title: string; crumb: str
           <div style={{ borderTop: "1px solid var(--colorNeutralStroke2)", padding: 12 }}>
             <div style={{ lineHeight: 1.3, marginBottom: mode === "dev" ? 8 : 4 }}>
               <div style={{ fontWeight: 600, fontSize: 13, color: "var(--colorNeutralForeground1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{account?.name}</div>
-              <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isAdmin ? "City of Bozeman" : me?.vendorName ?? ""}</div>
+              <div style={{ fontSize: 12, color: "var(--colorNeutralForeground3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isAdmin ? "Unity City" : me?.vendorName ?? ""}</div>
             </div>
             {mode === "dev" && (
               <button onClick={() => { setRole(isAdmin ? "vendor" : "admin"); nav("/"); }} style={{ width: "100%", padding: "7px 10px", border: "1px solid var(--colorNeutralStroke1)", borderRadius: "var(--radius-md)", background: "var(--colorNeutralBackground1)", color: "var(--colorNeutralForeground2)", font: "600 12px/16px var(--font-sans)", cursor: "pointer" }}>

@@ -10,7 +10,7 @@ const TILES: { title: string; desc: string; tab: string; bg: string; fg: string;
   { title: "Banking & remittance", desc: "EFT / ACH payment details", tab: "banking", bg: "#fef7b2", fg: "#817400", icon: "M3 10 12 4l9 6M4 10v8M20 10v8M8 10v8M16 10v8M3 21h18" },
   { title: "Tax & W-9", desc: "TIN, tax ID type, W-9 status", tab: "tax", bg: "var(--colorBrandBackground2)", fg: "var(--color-navy)", icon: "M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM10 7h4M10 11h4M10 15h2" },
   { title: "Documents & compliance", desc: "W-9, COI, licenses, certs", tab: "documents", bg: "#fdf6f3", fg: "var(--color-orange)", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" },
-  { title: "Category codes", desc: "Commodity & NIGP codes", tab: "categories", bg: "var(--bg-accent-soft)", fg: "var(--color-teal-700)", icon: "M20.6 13.4 12 22l-9-9V4h9zM7.5 7.5h.01" },
+  // Category codes hidden for now — retained in code, just not surfaced on the console.
 ];
 
 export function VendorConsole() {
@@ -21,7 +21,7 @@ export function VendorConsole() {
   if (isLoading || !me) return <AppShell title="My dashboard" crumb="Vendor Portal"><Spinner /></AppShell>;
 
   const stats = [
-    { label: "Vendor number", value: me.vendorNumber ?? "—", note: "City of Bozeman ERP" },
+    { label: "Vendor number", value: me.vendorNumber ?? "—", note: "Unity City ERP" },
     { label: "Profile complete", value: `${me.profileCompletePct}%`, note: vendor ? "W-9 & COI on file" : "" },
     { label: "Pending changes", value: String(me.pendingChangeCount), note: me.pendingChangeCount ? "In review" : "None" },
     { label: "Last payment", value: "Jun 30", note: "ACH · $12,480.00" },
@@ -33,7 +33,7 @@ export function VendorConsole() {
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 20, color: "var(--colorNeutralForeground1)" }}>Welcome back, {me.vendorName ?? me.user.displayName}</div>
           <div style={{ fontSize: 13, color: "var(--colorNeutralForeground3)", marginTop: 3 }}>
-            Vendor #{me.vendorNumber} · Linked to City of Bozeman ERP · Profile {me.profileCompletePct}% complete
+            Vendor #{me.vendorNumber} · Linked to Unity City ERP · Profile {me.profileCompletePct}% complete
           </div>
         </div>
         <Button variant="primary" onClick={() => nav("/profile/company")}>Edit my record</Button>

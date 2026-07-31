@@ -18,7 +18,7 @@ public class BusinessCentralErpClientTests
       "email": "dana@northstarsupply.com",
       "taxRegistrationNumber": "81-3920423",
       "blocked": " ",
-      "address": { "street": "1420 Industrial Blvd", "city": "Bozeman", "state": "MT", "postalCode": "59715", "countryRegionCode": "US" }
+      "address": { "street": "1420 Industrial Blvd", "city": "Unity City", "state": "MT", "postalCode": "59715", "countryRegionCode": "US" }
     } ] }
     """;
 
@@ -46,7 +46,7 @@ public class BusinessCentralErpClientTests
         Assert.NotNull(v);
         Assert.Equal("V-10485", v!.Number);
         Assert.Equal("Northstar Supply Co.", v.LegalName);
-        Assert.Equal("Bozeman", v.RemitCity);
+        Assert.Equal("Unity City", v.RemitCity);
         Assert.Equal("59715", v.RemitZip);
         Assert.Equal("81-3920423", v.Tin);
 

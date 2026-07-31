@@ -1,6 +1,6 @@
 # Univerus VSS — Vendor Self Service Portal
 
-A real rebuild of the VSS design prototype (tenant: **City of Bozeman**) in Univerus
+A real rebuild of the VSS design prototype (tenant: **Unity City**) in Univerus
 Unity/UDP conventions. Vendors self-manage their record; every edit becomes a
 **change request** that City staff approve, which then syncs to the ERP vendor master.
 

@@ -24,7 +24,7 @@ export function Signup() {
         <div><label style={labelStyle}>Confirm</label><input type="password" style={inputStyle} /></div>
       </div>
       <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "var(--fg-2)", lineHeight: 1.5 }}>
-        <input type="checkbox" style={{ marginTop: 2 }} /> I agree to the City of Bozeman supplier terms and privacy policy.
+        <input type="checkbox" style={{ marginTop: 2 }} /> I agree to the Unity City supplier terms and privacy policy.
       </label>
       <Button variant="teal" style={{ width: "100%", marginTop: 20 }} onClick={() => nav("/check-inbox")}>
         Create account &amp; send verification

@@ -72,7 +72,7 @@ export function LinkRecord() {
               <input style={{ ...input, marginBottom: 16 }} value={vendorNumber} onChange={(e) => setVendorNumber(e.target.value)} />
               <label style={label}>Verification PIN</label>
               <input style={input} value={pin} onChange={(e) => setPin(e.target.value)} />
-              <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "8px 0 0" }}>Your vendor number and PIN are on your City of Bozeman invitation letter or a recent remittance.</p>
+              <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "8px 0 0" }}>Your vendor number and PIN are on your Unity City invitation letter or a recent remittance.</p>
             </>
           ) : (
             <>
